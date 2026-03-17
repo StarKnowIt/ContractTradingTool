@@ -1389,8 +1389,9 @@ async function loadSymbolList() {
     const d = await r.json();
     const popular = ['BTC','ETH','BNB','SOL','XRP','DOGE','ADA','AVAX','LINK','DOT','LTC','MATIC','NEAR','ARB','OP'];
     window._allSymbols = (d.symbols || [])
-      .filter(s => s.status === 'TRADING' && s.quoteAsset === 'USDT')
+      .filter(s => s.status === 'TRADING' && s.quoteAsset === 'USDT' && s.contractType === 'PERPETUAL')
       .map(s => ({ symbol: s.symbol, base: s.baseAsset }))
+      .filter((s, i, arr) => arr.findIndex(x => x.symbol === s.symbol) === i)
       .sort((a, b) => {
         const ai = popular.indexOf(a.base), bi = popular.indexOf(b.base);
         if (ai >= 0 && bi >= 0) return ai - bi;
@@ -2090,6 +2091,7 @@ function signalMeta(type, value, desc) {
 }
 
 function analyzeAll(klines) {
+  if (!klines || klines.length < 50) throw new Error('K线数据不足，该币种可能是新币或交易量过低');
   const opens   = klines.map(k => parseFloat(k[1]));
   const highs   = klines.map(k => parseFloat(k[2]));
   const lows    = klines.map(k => parseFloat(k[3]));
@@ -2126,7 +2128,7 @@ function analyzeAll(klines) {
   indicators.ema = { ...signalMeta(emaType, `${fmtPrice(e20)}`, emaDesc), bar: emaBar, group:'trend' };
 
   // ─ EMA200 (Golden/Death Cross) ─
-  const e200Prev = ema200[last-1], e50Prev = ema50[last-1];
+  const e200Prev = ema200[last-1] || e200, e50Prev = ema50[last-1] || e50;
   let crossType = 'neutral', crossBar = 50, crossDesc = `EMA200: ${fmtPrice(e200)}`;
   if (price > e200) { crossType = 'bull'; crossBar = 70; crossDesc = `价格上方黄金区域`; }
   else { crossType = 'bear'; crossBar = 30; crossDesc = `价格跌破200均线`; }
