@@ -1457,6 +1457,8 @@ function filterSymbols(val) {
 }
 
 function selectSymbol(symbol, base) {
+  // 유효한 심볼인지 체크
+  if (!symbol || symbol.trim() === '') return;
   document.getElementById('symbolSelect').value = symbol;
   const inp = document.getElementById('symbolInput');
   inp.value = base + '/USDT';
@@ -1527,8 +1529,9 @@ async function getKlines(symbol, interval, limit=300) {
 }
 
 async function getTicker(symbol) {
-  const r = await fetchTimeout(`${API}/api/ticker?symbol=${symbol}`, 10000);
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  if (!symbol || symbol.trim() === '') return null;
+  const r = await fetchTimeout(`${API}/api/ticker?symbol=${encodeURIComponent(symbol)}`, 10000);
+  if (!r.ok) return null;
   return r.json();
 }
 
@@ -1621,6 +1624,8 @@ async function getNewsAlternative() {
 // CoinGecko community data (social volume proxy)
 const _cgCache = {};
 async function getCGCommunity(coin) {
+  // 중문 또는 특수문자 코인은 CoinGecko 스킵
+  if (!coin || !/^[a-zA-Z0-9]+$/.test(coin)) return null;
   const cacheKey = 'cg_' + coin;
   const cached = _cgCache[cacheKey];
   if (cached && Date.now() - cached.ts < 300000) return cached.data;
