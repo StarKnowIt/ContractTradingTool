@@ -731,11 +731,10 @@ select:focus{border-color:var(--blue);}
       <input type="text" id="symbolInput" placeholder="BTC/USDT" autocomplete="off"
         style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);
                font-family:var(--mono);font-size:13px;padding:6px 10px;border-radius:var(--r);
-               outline:none;width:110px;cursor:pointer;"
-        readonly
-        onclick="toggleSymbolDropdown()"
-        onfocus="this.removeAttribute('readonly');this.select();"
+               outline:none;width:120px;cursor:pointer;"
+        onclick="openSymbolDropdown()"
         oninput="filterSymbols(this.value)"
+        onblur="setTimeout(closeSymbolDropdown, 200)"
       />
       <div id="symbolDropdown" style="display:none;position:absolute;top:100%;left:0;
            background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r);
@@ -1295,100 +1294,14 @@ select:focus{border-color:var(--blue);}
      PAGE: DATA MONITOR
 ══════════════════════════════════════════════ -->
 <div id="pageMonitor" class="page-view">
-  <div class="main">
-
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
-      <div class="section-label" style="flex:1;margin:0">链上数据监控</div>
-      <button class="btn btn-primary" id="monitorRefreshBtn" onclick="loadMonitor()" style="font-size:10px;padding:5px 14px;">⟳ 刷新监控</button>
-      <div class="status-dot" id="monitorDot"></div>
-    </div>
-
-    <!-- Monitor Summary Bar -->
-    <div class="price-hero" style="border-left-color:var(--cyan)">
-      <div>
-        <div class="price-symbol" style="border-color:var(--cyan);color:var(--cyan)">MONITOR</div>
-        <div style="font-family:var(--mono);font-size:22px;font-weight:700;margin-top:6px;" id="monitorAlertCount">-- 个异动</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">链上大额仓位 · 聪明钱 · 异动信号</div>
+  <div class="main" style="display:flex;align-items:center;justify-content:center;min-height:60vh;">
+    <div style="text-align:center;padding:40px 20px;">
+      <div style="font-size:48px;margin-bottom:16px;">📊</div>
+      <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">数据监控</div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--cyan);letter-spacing:2px;margin-bottom:16px;">COMING SOON</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.8;max-width:320px;">
+        链上大额仓位监控、聪明钱追踪、资金费率历史、持仓量变化等功能正在开发中
       </div>
-      <div style="display:flex;gap:20px;flex-wrap:wrap;">
-        <div class="stat-item"><div class="stat-label">大额仓位</div><div class="stat-value" id="monWhaleCount" style="color:var(--amber)">--</div></div>
-        <div class="stat-item"><div class="stat-label">聪明钱信号</div><div class="stat-value" id="monSmartCount" style="color:var(--purple)">--</div></div>
-        <div class="stat-item"><div class="stat-label">链上异动</div><div class="stat-value" id="monAnomalyCount" style="color:var(--cyan)">--</div></div>
-        <div class="stat-item"><div class="stat-label">风险等级</div><div class="stat-value" id="monRiskLevel">--</div></div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:10px;color:var(--text-muted);font-family:var(--mono);">监控币种</div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;" id="monitorCoins">
-          <span style="font-family:var(--mono);font-size:10px;padding:2px 8px;background:rgba(0,200,224,0.1);border:1px solid rgba(0,200,224,0.3);border-radius:3px;color:var(--cyan)">BTC</span>
-          <span style="font-family:var(--mono);font-size:10px;padding:2px 8px;background:rgba(61,158,255,0.1);border:1px solid rgba(61,158,255,0.3);border-radius:3px;color:var(--blue)">ETH</span>
-          <span style="font-family:var(--mono);font-size:10px;padding:2px 8px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:3px;color:var(--text-muted)">SOL +12</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid-2">
-      <!-- Whale Positions -->
-      <div class="panel">
-        <div class="panel-header"><div class="panel-title">大额仓位监控</div><span class="panel-badge badge-amber" id="whaleBadge">--</span></div>
-        <div class="panel-body" id="whaleBody">
-          <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px;">加载中...</div>
-        </div>
-      </div>
-      <!-- Smart Money -->
-      <div class="panel">
-        <div class="panel-header"><div class="panel-title">聪明钱追踪</div><span class="panel-badge badge-blue" id="smartBadge">--</span></div>
-        <div class="panel-body" id="smartBody">
-          <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px;">加载中...</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid-2">
-      <!-- On-chain Anomalies -->
-      <div class="panel">
-        <div class="panel-header"><div class="panel-title">链上异动检测</div><span class="panel-badge badge-blue" id="anomalyBadge">--</span></div>
-        <div class="panel-body" id="anomalyBody">
-          <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px;">加载中...</div>
-        </div>
-      </div>
-      <!-- Exchange Flow -->
-      <div class="panel">
-        <div class="panel-header"><div class="panel-title">交易所资金流向</div><span class="panel-badge badge-blue" id="flowBadge">--</span></div>
-        <div class="panel-body" id="flowBody">
-          <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px;">加载中...</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section-label">市场微观结构</div>
-    <div class="grid-2">
-      <!-- Funding Rate History -->
-      <div class="panel">
-        <div class="panel-header"><div class="panel-title">资金费率历史趋势</div><span class="panel-badge badge-amber" id="frHistBadge">--</span></div>
-        <div class="panel-body" id="frHistBody">
-          <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px;">加载中...</div>
-        </div>
-      </div>
-      <!-- OI History -->
-      <div class="panel">
-        <div class="panel-header"><div class="panel-title">持仓量变化趋势</div><span class="panel-badge badge-blue" id="oiHistBadge">--</span></div>
-        <div class="panel-body" id="oiHistBody">
-          <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px;">加载中...</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section-label">风险预警</div>
-    <div class="panel">
-      <div class="panel-header"><div class="panel-title">综合风险预警系统</div><span class="panel-badge badge-blue" id="riskBadge">--</span></div>
-      <div class="panel-body">
-        <div id="riskAlerts" class="indicator-list"></div>
-        <div id="riskConclusion" style="margin-top:14px;padding:12px 14px;background:var(--bg2);border-radius:var(--r);font-size:13px;color:var(--text-dim);line-height:1.7;"></div>
-      </div>
-    </div>
-
-    <div style="height:30px;display:flex;align-items:center;justify-content:center;">
-      <span style="font-size:10px;color:var(--text-muted);font-family:var(--mono);">数据来源：BINANCE API · 链上数据为推算值，仅供参考</span>
     </div>
   </div>
 </div><!-- /pageMonitor -->
@@ -1466,90 +1379,94 @@ function showError(msg) {
 const API = 'https://api1.qianyubtc.com';
 
 // ── 币种搜索模块 ─────────────────────────────────────────────────────────────
-window.window._allSymbols = [];
-window.window._symbolDropdownOpen = false;
+window._allSymbols = [];
+window._symbolDropdownOpen = false;
 
 async function loadSymbolList() {
   try {
     const r = await fetch(`${API}/api/proxy?u=${encodeURIComponent('https://fapi.binance.com/fapi/v1/exchangeInfo')}`);
     if (!r.ok) return;
     const d = await r.json();
+    const popular = ['BTC','ETH','BNB','SOL','XRP','DOGE','ADA','AVAX','LINK','DOT','LTC','MATIC','NEAR','ARB','OP'];
     window._allSymbols = (d.symbols || [])
       .filter(s => s.status === 'TRADING' && s.quoteAsset === 'USDT')
       .map(s => ({ symbol: s.symbol, base: s.baseAsset }))
-      .sort((a, b) => a.base.localeCompare(b.base));
-    // 인기 종목 앞으로
-    const popular = ['BTC','ETH','BNB','SOL','XRP','DOGE','ADA','AVAX','LINK','DOT','LTC','MATIC','NEAR','ARB','OP'];
-    window._allSymbols.sort((a, b) => {
-      const ai = popular.indexOf(a.base), bi = popular.indexOf(b.base);
-      if (ai >= 0 && bi >= 0) return ai - bi;
-      if (ai >= 0) return -1;
-      if (bi >= 0) return 1;
-      return 0;
-    });
-  } catch {}
+      .sort((a, b) => {
+        const ai = popular.indexOf(a.base), bi = popular.indexOf(b.base);
+        if (ai >= 0 && bi >= 0) return ai - bi;
+        if (ai >= 0) return -1;
+        if (bi >= 0) return 1;
+        return a.base.localeCompare(b.base);
+      });
+  } catch(e) {
+    // 실패 시 기본 목록 사용
+    window._allSymbols = ['BTC','ETH','BNB','SOL','XRP','DOGE','ADA','AVAX','LINK','DOT','LTC','MATIC','NEAR','ARB','OP']
+      .map(b => ({ symbol: b+'USDT', base: b }));
+  }
 }
 
 function renderSymbolDropdown(items) {
   const dd = document.getElementById('symbolDropdown');
+  if (!dd) return;
+  const current = document.getElementById('symbolSelect').value;
   if (!items.length) {
     dd.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--text-muted);">无匹配结果</div>';
     return;
   }
-  const current = document.getElementById('symbolSelect').value;
-  dd.innerHTML = items.slice(0, 50).map(s => `
+  dd.innerHTML = items.slice(0, 80).map(s => `
     <div class="symbol-dropdown-item ${s.symbol === current ? 'active' : ''}"
-         onclick="selectSymbol('${s.symbol}','${s.base}')">
+         onmousedown="selectSymbol('${s.symbol}','${s.base}')">
       <span class="sym-name">${s.base}</span>
       <span style="color:var(--text-muted);font-size:11px;">/USDT</span>
     </div>
   `).join('');
 }
 
-function toggleSymbolDropdown() {
+function openSymbolDropdown() {
   const dd = document.getElementById('symbolDropdown');
   const inp = document.getElementById('symbolInput');
-  window._symbolDropdownOpen = !window._symbolDropdownOpen;
-  if (window._symbolDropdownOpen) {
-    inp.removeAttribute('readonly');
-    inp.value = '';
-    dd.style.display = 'block';
-    renderSymbolDropdown(window._allSymbols);
-  } else {
-    closeSymbolDropdown();
-  }
+  if (!dd || !inp) return;
+  window._symbolDropdownOpen = true;
+  inp.value = '';
+  inp.placeholder = '搜索币种...';
+  dd.style.display = 'block';
+  renderSymbolDropdown(window._allSymbols);
 }
 
 function filterSymbols(val) {
   const dd = document.getElementById('symbolDropdown');
-  dd.style.display = 'block';
+  if (!dd) return;
   window._symbolDropdownOpen = true;
-  const q = val.toUpperCase().replace('/','').replace('-','');
+  dd.style.display = 'block';
+  const q = val.toUpperCase().replace('/','').replace('-','').replace(' ','');
   const filtered = !q ? window._allSymbols : window._allSymbols.filter(s =>
-    s.base.includes(q) || s.symbol.includes(q)
+    s.base.startsWith(q) || s.symbol.startsWith(q)
   );
   renderSymbolDropdown(filtered);
 }
 
 function selectSymbol(symbol, base) {
   document.getElementById('symbolSelect').value = symbol;
-  document.getElementById('symbolInput').value = base + '/USDT';
-  document.getElementById('symbolInput').setAttribute('readonly', '');
+  const inp = document.getElementById('symbolInput');
+  inp.value = base + '/USDT';
+  inp.placeholder = base + '/USDT';
   closeSymbolDropdown();
   loadAll();
 }
 
 function closeSymbolDropdown() {
   window._symbolDropdownOpen = false;
-  document.getElementById('symbolDropdown').style.display = 'none';
-  // 현재 선택된 값으로 input 복원
+  const dd = document.getElementById('symbolDropdown');
+  const inp = document.getElementById('symbolInput');
+  if (!dd || !inp) return;
+  dd.style.display = 'none';
   const sym = document.getElementById('symbolSelect').value;
   const base = sym.replace('USDT','');
-  document.getElementById('symbolInput').value = base + '/USDT';
-  document.getElementById('symbolInput').setAttribute('readonly', '');
+  inp.value = base + '/USDT';
+  inp.placeholder = base + '/USDT';
 }
 
-// 외부 클릭 시 드롭다운 닫기
+// 외부 클릭 시 닫기
 document.addEventListener('click', (e) => {
   const wrap = document.getElementById('symbolSearchWrap');
   if (wrap && !wrap.contains(e.target)) closeSymbolDropdown();
