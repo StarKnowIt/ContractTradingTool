@@ -2138,14 +2138,15 @@ function analyzeAll(klines) {
   const boll = calcBollinger(closes);
   const bollLast = boll[last];
   let bollType = 'neutral', bollBar = 50, bollDesc = '数据不足';
+  let bw = 0;
   if (bollLast && bollLast.upper != null) {
-    const { upper, mid, lower, bw } = bollLast;
+    const { upper, mid, lower } = bollLast;
+    bw = bollLast.bw || 0;
     const pct = (price - lower) / (upper - lower);
     if (pct > 0.85) { bollType = 'bear'; bollBar = 25; bollDesc = '价格触碰上轨，超买'; }
     else if (pct < 0.15) { bollType = 'bull'; bollBar = 75; bollDesc = '价格触碰下轨，超卖'; }
     else if (pct > 0.5) { bollType = 'bull'; bollBar = 60; bollDesc = `BB%B: ${(pct*100).toFixed(0)}%`; }
     else { bollType = 'bear'; bollBar = 40; bollDesc = `BB%B: ${(pct*100).toFixed(0)}%`; }
-    bollDesc = bollDesc;
     indicators.boll = { ...signalMeta(bollType, `${(pct*100).toFixed(0)}%`, bollDesc), bar: bollBar, group:'trend' };
   } else {
     indicators.boll = { ...signalMeta('neutral', 'N/A', '数据不足'), bar: 50, group:'trend' };
