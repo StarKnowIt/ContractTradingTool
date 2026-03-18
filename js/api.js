@@ -255,3 +255,31 @@ async function getNewsAlternative() {
   } catch { return null; }
 }
 
+
+// ── 消息面数据 ────────────────────────────────────────────────────────────────
+async function getNewsForSentiment(coin = 'BTC') {
+  // CryptoPanic 公开API（无需key）
+  const url = `https://cryptopanic.com/api/v1/posts/?auth_token=free&currencies=${coin}&public=true&kind=news`;
+  try {
+    const r = await fetch(`${API}/api/proxy?u=${encodeURIComponent(url)}`);
+    if (!r.ok) throw new Error('news fetch failed');
+    const d = await r.json();
+    return d.results || [];
+  } catch(e) {
+    // fallback: alternative.me news
+    try {
+      const r2 = await fetch(`${API}/api/proxy?u=${encodeURIComponent('https://api.alternative.me/v3/news/?limit=20')}`);
+      const d2 = await r2.json();
+      return (d2.data || []).map(n => ({
+        title: n.title,
+        url: n.url,
+        published_at: n.published_at,
+        votes: { positive: 0, negative: 0, important: 0 },
+        source: { title: n.source?.name || 'News' },
+        _sentiment: 'neutral'
+      }));
+    } catch(e2) {
+      return [];
+    }
+  }
+}

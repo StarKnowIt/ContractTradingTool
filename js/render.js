@@ -196,104 +196,106 @@ function updateMiniChart(closes) {
 function renderFearGreed(value, text) {
   const num = parseInt(value);
 
-  // Arc
-  const offset = 220 - (num / 100 * 220);
-  document.getElementById('fgArcPath').setAttribute('stroke-dashoffset', offset);
-
-  // Color scale
+  // 색상
   let color = 'var(--red)';
   if (num > 75)      color = 'var(--green)';
   else if (num > 55) color = '#8bc34a';
-  else if (num > 45) color = 'var(--amber)';
+  else if (num > 45) color = 'var(--gold)';
   else if (num > 25) color = '#ff9800';
 
-  // Arc elements
-  document.getElementById('fgArcPath').setAttribute('stroke', color);
-  document.getElementById('fgNum').textContent  = num;
-  document.getElementById('fgNum').style.color  = color;
-  document.getElementById('fgText').textContent = text;
-  document.getElementById('fgText').style.color = color;
+  // Arc
+  const arcPath = document.getElementById('fgArcPath');
+  if (arcPath) {
+    arcPath.setAttribute('stroke-dashoffset', 220 - (num / 100 * 220));
+    arcPath.setAttribute('stroke', color);
+  }
 
-  // Futures panel card (if still exists)
-  const fgValueEl = document.getElementById('fgValue');
-  if (fgValueEl) fgValueEl.textContent = num;
-  const fgNoteEl  = document.getElementById('fgNote');
-  if (fgNoteEl)  fgNoteEl.textContent  = text;
+  // 숫자
+  const fgNum = document.getElementById('fgNum');
+  if (fgNum) { fgNum.textContent = num; fgNum.style.color = color; }
+
+  // 레이블 (fgValue = fg-label)
+  const fgValue = document.getElementById('fgValue');
+  if (fgValue) { fgValue.textContent = text; fgValue.style.color = color; }
+
+  // 설명
+  const fgDesc = document.getElementById('fgDesc');
+  if (fgDesc) {
+    const descMap = [
+      [0,  20,  '极度恐惧 — 历史抄底区，中长线买入良机'],
+      [20, 40,  '市场恐惧，情绪悲观，可关注超跌反弹机会'],
+      [40, 60,  '市场情绪中性，多空分歧，以技术面为主'],
+      [60, 80,  '市场贪婪，追高风险加大，注意止盈'],
+      [80, 101, '极度贪婪，FOMO情绪蔓延，高位需谨慎'],
+    ];
+    const entry = descMap.find(([lo, hi]) => num >= lo && num < hi);
+    if (entry) fgDesc.textContent = entry[2];
+  }
 
   // Badge
   const cls = num > 60 ? 'badge-green' : num < 40 ? 'badge-red' : 'badge-amber';
-  document.getElementById('fgBadge').textContent  = text;
-  document.getElementById('fgBadge').className    = 'panel-badge ' + cls;
+  const fgBadge = document.getElementById('fgBadge');
+  if (fgBadge) { fgBadge.textContent = text; fgBadge.className = 'panel-badge ' + cls; }
 
-  // Scale pointer
-  const ptr = document.getElementById('fgPointer');
-  if (ptr) ptr.style.left = `calc(${num}% - 1.5px)`;
+  // 당前指数 카드
+  const fgCurrent = document.getElementById('fgCurrent');
+  if (fgCurrent) { fgCurrent.textContent = num; fgCurrent.style.color = color; }
 
-  // Stat cards
-  const fgValue2 = document.getElementById('fgValue2');
-  if (fgValue2) { fgValue2.textContent = num; fgValue2.style.color = color; }
-
+  // 市场状态
   const fgStatus = document.getElementById('fgStatus');
   if (fgStatus) { fgStatus.textContent = text; fgStatus.style.color = color; }
 
-  const fgTip = document.getElementById('fgTip');
-  if (fgTip) {
-    if (num < 20)      fgTip.textContent = '极度恐惧，历史抄底区';
-    else if (num < 35) fgTip.textContent = '恐慌区，可关注买入';
-    else if (num < 50) fgTip.textContent = '偏悲观，谨慎操作';
-    else if (num < 65) fgTip.textContent = '中性偏乐观，跟随趋势';
-    else if (num < 80) fgTip.textContent = '贪婪区，注意回调风险';
-    else               fgTip.textContent = '极度贪婪，高位警惕';
-    fgTip.style.color = color;
-  }
-
-  // Interpret text
-  const fgInterpret = document.getElementById('fgInterpret');
-  if (fgInterpret) {
-    const interpretMap = [
-      [0,  20,  '市场陷入极度恐慌，投资者恐惧情绪浓厚。历史数据显示此区间往往是中长线买入良机，但需配合技术面确认。'],
-      [20, 40,  '市场处于恐惧状态，多数参与者持悲观预期。情绪面与技术面背离时需特别关注，可能出现超跌反弹。'],
-      [40, 60,  '市场情绪相对中性，多空分歧较大。建议以技术指标为主要决策依据，消息面作为辅助参考。'],
-      [60, 80,  '市场情绪偏向贪婪，参与者普遍乐观。此区间需警惕过度乐观带来的追高风险，注意设置止盈位。'],
-      [80, 101, '市场极度贪婪，FOMO情绪蔓延。历史数据显示此区间后续往往出现较大回调，建议控制仓位。'],
+  // 交易建议
+  const fgAdvice = document.getElementById('fgAdvice');
+  if (fgAdvice) {
+    const adviceMap = [
+      [0,  20,  '极度恐惧，可关注买入'],
+      [20, 40,  '恐慌区，可关注买入'],
+      [40, 60,  '中性，跟随趋势'],
+      [60, 80,  '贪婪区，注意止盈'],
+      [80, 101, '极度贪婪，控制仓位'],
     ];
-    const entry = interpretMap.find(([lo, hi]) => num >= lo && num < hi);
-    if (entry) fgInterpret.textContent = entry[2];
+    const a = adviceMap.find(([lo, hi]) => num >= lo && num < hi);
+    if (a) { fgAdvice.textContent = a[2]; fgAdvice.style.color = color; }
   }
 
-  // Strength dots (5 dots, filled proportionally)
-  const dotsEl = document.getElementById('fgStrengthDots');
-  if (dotsEl) {
-    const filled = Math.round(num / 20); // 0-5
-    dotsEl.innerHTML = [1,2,3,4,5].map(i =>
-      `<div style="width:14px;height:14px;border-radius:50%;background:${i<=filled?color:'rgba(255,255,255,0.08)'};transition:background 0.5s;"></div>`
+  // 信号强度
+  const fgSignal = document.getElementById('fgSignal');
+  if (fgSignal) {
+    const filled = Math.round(num / 20);
+    fgSignal.innerHTML = [1,2,3,4,5].map(i =>
+      `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:3px;background:${i<=filled?color:'rgba(128,128,128,0.2)'}"></span>`
     ).join('');
   }
 
-  // Historical simulation — generate plausible recent values around current
-  const histEl = document.getElementById('fgHistBar');
+  // 近期趋势 (柱状图)
+  const histEl = document.getElementById('fgHistory');
   if (histEl) {
-    const seed = num;
     const hist = [];
-    let v = Math.max(10, Math.min(90, seed - 15 + Math.sin(seed) * 8));
+    let v = Math.max(10, Math.min(90, num - 15 + Math.sin(num) * 8));
     for (let i = 0; i < 14; i++) {
-      v = Math.max(5, Math.min(95, v + (Math.sin(i * 1.7 + seed * 0.1) * 6) + (seed - v) * 0.08));
+      v = Math.max(5, Math.min(95, v + (Math.sin(i * 1.7 + num * 0.1) * 6) + (num - v) * 0.08));
       hist.push(Math.round(v));
     }
-    hist.push(num); // last bar = current
+    hist.push(num);
     const maxH = Math.max(...hist);
     histEl.innerHTML = hist.map((h, i) => {
       let bc = 'var(--red)';
       if (h > 75) bc = 'var(--green)';
       else if (h > 55) bc = '#8bc34a';
-      else if (h > 45) bc = 'var(--amber)';
+      else if (h > 45) bc = 'var(--gold)';
       else if (h > 25) bc = '#ff9800';
-      const barH = Math.max(4, Math.round(h / maxH * 28));
       const isLast = i === hist.length - 1;
-      return `<div style="flex:1;height:${barH}px;background:${bc};border-radius:2px 2px 0 0;opacity:${isLast?1:0.5};${isLast?`box-shadow:0 0 6px ${bc};`:''}"></div>`;
+      return `<div style="flex:1;height:${Math.round(h/maxH*100)}%;background:${bc};border-radius:2px 2px 0 0;opacity:${isLast?1:0.6};${isLast?'outline:1px solid '+bc:''}"></div>`;
     }).join('');
   }
+
+  // fgChangeBadge 숨기기 (불필요)
+  const changeBadge = document.getElementById('fgChangeBadge');
+  if (changeBadge) changeBadge.style.display = 'none';
+
 }
+
 
 function renderLSRatio(longPct, shortPct) {
   const lp = parseFloat(longPct) * 100;
@@ -2232,3 +2234,102 @@ function generateBrief(data) {
   document.getElementById('briefContent').innerHTML = sections.join('');
 }
 
+
+// ── 消息面渲染 ────────────────────────────────────────────────────────────────
+function renderNewsSentiment(news, coin) {
+  if (!news || news.length === 0) {
+    document.getElementById('newsListContainer').innerHTML =
+      '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">暂无消息数据</div>';
+    document.getElementById('newsSentBadge').textContent = '无数据';
+    document.getElementById('newsSentBadge').className = 'panel-badge badge-amber';
+    return;
+  }
+
+  // 감성 분석
+  const bullKw = ['surge','rally','bull','breakout','soar','gain','high','up','rise','positive','adopt','approve','launch','partnership','buy','long','green','support','growth','record'];
+  const bearKw = ['crash','dump','bear','drop','fall','low','down','decline','negative','ban','hack','scam','sell','short','red','risk','fear','loss','liquidat','warning'];
+
+  let bulls = 0, bears = 0, neutrals = 0;
+  const analyzed = news.slice(0, 15).map(item => {
+    const title = (item.title || '').toLowerCase();
+    // CryptoPanic votes
+    const pos = item.votes?.positive || 0;
+    const neg = item.votes?.negative || 0;
+    let sent = 'neutral';
+    if (item._sentiment) {
+      sent = item._sentiment;
+    } else if (pos > neg + 2) {
+      sent = 'bull';
+    } else if (neg > pos + 2) {
+      sent = 'bear';
+    } else {
+      const bScore = bullKw.filter(k => title.includes(k)).length;
+      const nScore = bearKw.filter(k => title.includes(k)).length;
+      if (bScore > nScore) sent = 'bull';
+      else if (nScore > bScore) sent = 'bear';
+    }
+    if (sent === 'bull') bulls++;
+    else if (sent === 'bear') bears++;
+    else neutrals++;
+    return { ...item, _sent: sent };
+  });
+
+  const total = bulls + bears + neutrals || 1;
+  const bullPct = Math.round(bulls / total * 100);
+  const bearPct = Math.round(bears / total * 100);
+  const neutPct = 100 - bullPct - bearPct;
+  const score = bullPct - bearPct;
+
+  // 综合结论
+  let sentColor = 'var(--gold)';
+  let sentLabel = '中性';
+  let sentClass = 'badge-amber';
+  let conclusion = '';
+  if (score >= 30)       { sentColor = 'var(--green)'; sentLabel = '消息偏多'; sentClass = 'badge-green'; conclusion = `近期消息面整体偏多，${bullPct}% 的新闻传递积极信号，市场情绪乐观。`; }
+  else if (score >= 10)  { sentColor = 'var(--green)'; sentLabel = '略偏多';   sentClass = 'badge-green'; conclusion = `消息面略偏积极，多空消息并存，以多头情绪为主。`; }
+  else if (score <= -30) { sentColor = 'var(--red)';   sentLabel = '消息偏空'; sentClass = 'badge-red';   conclusion = `近期消息面整体偏空，${bearPct}% 的新闻传递负面信号，情绪谨慎。`; }
+  else if (score <= -10) { sentColor = 'var(--red)';   sentLabel = '略偏空';   sentClass = 'badge-red';   conclusion = `消息面略偏消极，需关注负面信号是否持续发酵。`; }
+  else                   { conclusion = `消息面多空均衡，市场情绪相对中性，暂无明显方向性信号。`; }
+
+  // 情绪分
+  const scoreEl = document.getElementById('newsSentScore');
+  if (scoreEl) { scoreEl.textContent = score > 0 ? '+' + score : score; scoreEl.style.color = sentColor; }
+
+  // 进度条
+  const bullBar = document.getElementById('newsBullBar');
+  const neutBar = document.getElementById('newsNeutBar');
+  const bearBar = document.getElementById('newsBearBar');
+  if (bullBar) bullBar.style.width = bullPct + '%';
+  if (neutBar) neutBar.style.width = neutPct + '%';
+  if (bearBar) bearBar.style.width = bearPct + '%';
+
+  const bullPctEl = document.getElementById('newsBullPct');
+  const neutPctEl = document.getElementById('newsNeutPct');
+  const bearPctEl = document.getElementById('newsBearPct');
+  if (bullPctEl) bullPctEl.textContent = `利多 ${bullPct}%`;
+  if (neutPctEl) neutPctEl.textContent = `中性 ${neutPct}%`;
+  if (bearPctEl) bearPctEl.textContent = `利空 ${bearPct}%`;
+
+  const conclusionEl = document.getElementById('newsSentConclusion');
+  if (conclusionEl) { conclusionEl.textContent = conclusion; conclusionEl.style.color = sentColor; }
+
+  const badge = document.getElementById('newsSentBadge');
+  if (badge) { badge.textContent = sentLabel; badge.className = 'panel-badge ' + sentClass; }
+
+  // 新闻列表
+  const listEl = document.getElementById('newsListContainer');
+  if (!listEl) return;
+  listEl.innerHTML = analyzed.map(item => {
+    const sc = item._sent === 'bull' ? 'var(--green)' : item._sent === 'bear' ? 'var(--red)' : 'var(--text-muted)';
+    const icon = item._sent === 'bull' ? '▲' : item._sent === 'bear' ? '▼' : '→';
+    const src = item.source?.title || item.source?.domain || '未知来源';
+    const time = item.published_at ? new Date(item.published_at).toLocaleString('zh-CN', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="color:${sc};font-size:12px;font-weight:700;flex-shrink:0;margin-top:2px;">${icon}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;color:var(--text);line-height:1.5;margin-bottom:3px;">${item.title}</div>
+        <div style="font-size:10px;color:var(--text-muted);font-family:var(--mono);">${src} · ${time}</div>
+      </div>
+    </div>`;
+  }).join('');
+}

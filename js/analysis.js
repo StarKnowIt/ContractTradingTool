@@ -27,7 +27,8 @@ async function loadAll(silent=false) {
   try {
     // Parallel fetch
     document.getElementById('loaderText').textContent = '并行获取市场数据...';
-    const [klines, ticker, fundingData, oiData, lsData, fgData, forceOrdersData, depthData] = await Promise.allSettled([
+    const coin = symbol.replace('USDT','').replace('BUSD','');
+    const [klines, ticker, fundingData, oiData, lsData, fgData, forceOrdersData, depthData, newsData] = await Promise.allSettled([
       getKlines(symbol, interval, 300),
       getTicker(symbol),
       getFundingRate(symbol),
@@ -35,7 +36,8 @@ async function loadAll(silent=false) {
       getGlobalLSRatio(symbol),
       getFearGreed(),
       getForceOrders(symbol),
-      getOrderBook(symbol, 20)
+      getOrderBook(symbol, 20),
+      getNewsForSentiment(coin)
     ]);
 
     document.getElementById('loaderText').textContent = '计算技术指标...';
