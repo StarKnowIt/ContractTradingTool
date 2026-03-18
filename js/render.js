@@ -684,14 +684,14 @@ function renderOrderBook(depth, price) {
   const bids = depth.bids.slice(0, 8).map(b => ({ price: parseFloat(b[0]), size: parseFloat(b[1]) }));
   const asks = depth.asks.slice(0, 8).map(a => ({ price: parseFloat(a[0]), size: parseFloat(a[1]) })).reverse();
 
-  const allSizes = [...bids, ...asks].map(o => o.size);
-  const maxSize  = Math.max(...allSizes);
+  const maxBidSize = Math.max(...bids.map(o => o.size));
+  const maxAskSize = Math.max(...asks.map(o => o.size));
 
   // Asks (sells) — shown above spread, red
   const askHtml = asks.map(a => {
-    const barW = (a.size / maxSize * 100).toFixed(1);
+    const barW = (a.size / maxAskSize * 100).toFixed(1);
     const val  = a.price * a.size;
-    const isWall = a.size > maxSize * 0.5;
+    const isWall = a.size > maxAskSize * 0.5;
     return `<div class="ob-row" style="${isWall?'background:rgba(255,61,87,0.06);border-radius:4px;':''}">
       <div class="ob-price" style="color:var(--red)">${fmtPrice(a.price)}</div>
       <div class="ob-bar-wrap"><div class="ob-bar" style="width:${barW}%;background:rgba(255,61,87,${isWall?0.5:0.25})"></div></div>
@@ -701,8 +701,8 @@ function renderOrderBook(depth, price) {
 
   // Bids (buys) — shown below spread, green
   const bidHtml = bids.map(b => {
-    const barW = (b.size / maxSize * 100).toFixed(1);
-    const isWall = b.size > maxSize * 0.5;
+    const barW = (b.size / maxBidSize * 100).toFixed(1);
+    const isWall = b.size > maxBidSize * 0.5;
     return `<div class="ob-row" style="${isWall?'background:rgba(0,230,118,0.06);border-radius:4px;':''}">
       <div class="ob-price" style="color:var(--green)">${fmtPrice(b.price)}</div>
       <div class="ob-bar-wrap"><div class="ob-bar" style="width:${barW}%;background:rgba(0,230,118,${isWall?0.5:0.25})"></div></div>
