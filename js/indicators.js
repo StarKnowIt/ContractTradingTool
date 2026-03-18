@@ -661,6 +661,129 @@ function analyzeAll(klines) {
   // Elliott Wave
   const elliott = calcElliottWave(closes, highs, lows);
 
+
+  // ── 新增交易系统指标 ─────────────────────────────────────────────────────────
+
+  // 抛物线SAR
+  try {
+    const { sar, bull: sarBull } = calcParabolicSAR(highs, lows);
+    const sarVal = sar[last];
+    const sarType = sarBull ? 'bull' : 'bear';
+    const sarDesc = sarBull
+      ? `SAR(${fmtPrice(sarVal)}) 在价格下方，多头趋势，止损参考 ${fmtPrice(sarVal)}`
+      : `SAR(${fmtPrice(sarVal)}) 在价格上方，空头趋势，阻力参考 ${fmtPrice(sarVal)}`;
+    indicators.sar = { ...signalMeta(sarType, fmtPrice(sarVal), sarDesc), bar: sarBull?72:28, group:'trend' };
+  } catch(e) {}
+
+  // Aroon
+  try {
+    const { aroonUp, aroonDown } = calcAroon(highs, lows);
+    const aUp = aroonUp[last], aDown = aroonDown[last];
+    let aroonType = 'neutral', aroonDesc = 'Aroon数据不足';
+    if (aUp !== null && aDown !== null) {
+      if (aUp > 70 && aDown < 30)      { aroonType = 'bull'; aroonDesc = `Aroon Up(${aUp.toFixed(0)}) 强势，上涨趋势确立`; }
+      else if (aDown > 70 && aUp < 30) { aroonType = 'bear'; aroonDesc = `Aroon Down(${aDown.toFixed(0)}) 强势，下跌趋势确立`; }
+      else if (aUp > aDown)             { aroonType = 'bull'; aroonDesc = `Up(${aUp.toFixed(0)}) > Down(${aDown.toFixed(0)})，偏多`; }
+      else                              { aroonType = 'bear'; aroonDesc = `Down(${aDown.toFixed(0)}) > Up(${aUp.toFixed(0)})，偏空`; }
+    }
+    indicators.aroon = { ...signalMeta(aroonType, aUp!=null?`${aUp.toFixed(0)}/${aDown.toFixed(0)}`:'--', aroonDesc), bar: aroonType==='bull'?70:aroonType==='bear'?30:50, group:'trend' };
+  } catch(e) {}
+
+  // 肯特纳通道
+  try {
+    const keltner = calcKeltner(highs, lows, closes);
+    const kelt = keltner[last];
+    let keltType = 'neutral', keltDesc = '';
+    if (kelt && kelt.upper && kelt.lower) {
+      if (price > kelt.upper)      { keltType = 'bull'; keltDesc = `突破肯特纳上轨(${fmtPrice(kelt.upper)})，强势突破`; }
+      else if (price < kelt.lower) { keltType = 'bear'; keltDesc = `跌破肯特纳下轨(${fmtPrice(kelt.lower)})，弱势信号`; }
+      else if (price > kelt.mid)   { keltType = 'bull'; keltDesc = `价格在中轨上方(${fmtPrice(kelt.mid)})，偏多`; }
+      else                         { keltType = 'bear'; keltDesc = `价格在中轨下方(${fmtPrice(kelt.mid)})，偏空`; }
+    }
+    indicators.keltner = { ...signalMeta(keltType, kelt?.upper?fmtPrice(kelt.upper):'--', keltDesc), bar: keltType==='bull'?68:keltType==='bear'?32:50, group:'volatility' };
+  } catch(e) {}
+
+  // 顾比复合均线GMMA
+  try {
+    const gmma = calcGMMA(closes);
+    let gmmaType = 'neutral', gmmaDesc = '';
+    if (gmma.shortAvg > gmma.longAvg) {
+      gmmaType = 'bull';
+      gmmaDesc = gmma.shortSpread > 1
+        ? `短期均线组强势发散于长期线上方，趋势强劲，投机者主导`
+        : `短期均线在长期线上方，偏多但动能一般`;
+    } else {
+      gmmaType = 'bear';
+      gmmaDesc = gmma.shortSpread > 1
+        ? `短期均线组在长期线下方发散，空头趋势确立`
+        : `短期均线在长期线下方，偏空`;
+    }
+    indicators.gmma = { ...signalMeta(gmmaType, fmtPrice(gmma.shortAvg), gmmaDesc), bar: gmmaType==='bull'?72:28, group:'trend' };
+  } catch(e) {}
+
+  // TD序列
+  try {
+    const td = calcTDSequential(closes);
+    let tdType = 'neutral', tdDesc = '';
+    if (td.isExhausted && td.lastCount > 0) {
+      tdType = 'bear'; tdDesc = `TD计数达 ${td.lastCount}，上涨动能衰竭，关注反转`;
+    } else if (td.isExhausted && td.lastCount < 0) {
+      tdType = 'bull'; tdDesc = `TD计数达 ${Math.abs(td.lastCount)}，下跌动能衰竭，关注反弹`;
+    } else if (td.lastCount > 0) {
+      tdDesc = `TD上涨计数 ${td.lastCount}/9，序列进行中`;
+    } else if (td.lastCount < 0) {
+      tdDesc = `TD下跌计数 ${Math.abs(td.lastCount)}/9，序列进行中`;
+    } else {
+      tdDesc = 'TD序列重置';
+    }
+    indicators.td = { ...signalMeta(tdType, `${Math.abs(td.lastCount)}/9`, tdDesc), bar: tdType==='bull'?68:tdType==='bear'?32:50, group:'trend' };
+  } catch(e) {}
+
+  // 价格行为 PA (BOS/FVG/OB)
+  try {
+    const pa = calcPriceAction(highs, lows, closes);
+    let paType = 'neutral', paDesc = '';
+    if (pa.bos === 'bull')      { paType = 'bull'; paDesc = `BOS看多：突破近期摆动高点，结构转多`; }
+    else if (pa.bos === 'bear') { paType = 'bear'; paDesc = `BOS看空：跌破近期摆动低点，结构转空`; }
+    else if (pa.fvg)            { paType = pa.fvg.type; paDesc = `FVG${pa.fvg.type==='bull'?'看多':'看空'}：${fmtPrice(pa.fvg.price)} 附近存在公平价值缺口`; }
+    else if (pa.ob)             { paType = pa.ob.type; paDesc = `订单块(OB)：${fmtPrice(pa.ob.price)} 附近有${pa.ob.type==='bull'?'多头':'空头'}订单块`; }
+    else                        { paDesc = '价格结构中性，等待BOS或FVG信号'; }
+    indicators.pa = { ...signalMeta(paType, pa.bos||(pa.fvg?'FVG':'OB')||'中性', paDesc), bar: paType==='bull'?70:paType==='bear'?30:50, group:'structure' };
+  } catch(e) {}
+
+  // 威科夫理论
+  try {
+    const wyckoff = calcWyckoff(closes, volumes, highs, lows);
+    indicators.wyckoff = { ...signalMeta(wyckoff.type, wyckoff.phase, wyckoff.desc), bar: wyckoff.type==='bull'?72:wyckoff.type==='bear'?28:50, group:'structure' };
+  } catch(e) {}
+
+  // 唐奇安通道（覆盖旧版本，group改为structure）
+  try {
+    const donc = calcDonchian(highs, lows);
+    const don = donc[last];
+    let donType = 'neutral', donDesc = '';
+    if (don && don.upper) {
+      if (price >= don.upper * 0.998)      { donType = 'bull'; donDesc = `突破唐奇安上轨(${fmtPrice(don.upper)})，强势信号`; }
+      else if (price <= don.lower * 1.002) { donType = 'bear'; donDesc = `跌破唐奇安下轨(${fmtPrice(don.lower)})，弱势信号`; }
+      else { donDesc = `价格在通道内(${fmtPrice(don.lower)}~${fmtPrice(don.upper)})震荡`; }
+    }
+    indicators.donchianPA = { ...signalMeta(donType, don?.upper?fmtPrice(don.upper):'--', donDesc), bar: donType==='bull'?72:donType==='bear'?28:50, group:'structure' };
+  } catch(e) {}
+
+  // 锚定VWAP
+  try {
+    const avwapData = calcAnchoredVWAP(highs, lows, closes, volumes);
+    const avwapVal = avwapData.avwap[last];
+    let avwapType = 'neutral', avwapDesc = '';
+    if (avwapVal) {
+      const diff = ((price - avwapVal) / avwapVal * 100).toFixed(2);
+      if (price > avwapVal * 1.01)      { avwapType = 'bull'; avwapDesc = `价格高于锚定VWAP(${fmtPrice(avwapVal)}) +${diff}%，多头持仓成本上方`; }
+      else if (price < avwapVal * 0.99) { avwapType = 'bear'; avwapDesc = `价格低于锚定VWAP(${fmtPrice(avwapVal)}) ${diff}%，空头占优`; }
+      else                              { avwapDesc = `价格在锚定VWAP(${fmtPrice(avwapVal)})附近，多空均衡`; }
+    }
+    indicators.avwap = { ...signalMeta(avwapType, avwapVal?fmtPrice(avwapVal):'--', avwapDesc), bar: avwapType==='bull'?68:avwapType==='bear'?32:50, group:'structure' };
+  } catch(e) {}
+
   return { indicators, closes, highs, lows, volumes, price, ema20, ema50, ema200, fib: calcFibonacci(highs, lows, closes), vegas, elliott, m5, m10, m20, m60, m120 };
 }
 

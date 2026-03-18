@@ -43,10 +43,11 @@ const nameMap = {
   boll: '布林带', bw: '带宽', atr: 'ATR', keltner: '肯特纳通道',
   // 成交量系统
   obv: 'OBV', volume: '成交量', cmf: 'CMF', vwap: 'VWAP',
-  // 结构系统
+  // 结构交易系统
   pa: '价格行为 PA', wyckoff: '威科夫理论',
-  donchian: '唐奇安通道', avwap: '锚定 VWAP',
+  donchianPA: '唐奇安通道', avwap: '锚定 VWAP',
   // 补充
+  lmtPct: '斐波那契位置',
 };
 
 const nameMapVpa = {
