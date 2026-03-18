@@ -19,7 +19,7 @@ async function loadCalcPage() {
   const tipEl  = document.getElementById('calcNoDataTip');
   const mainEl = document.getElementById('calcMain');
   if (tipEl)  tipEl.style.display = 'none';
-  if (mainEl) mainEl.style.display = 'block';
+  if (mainEl) { mainEl.style.display = 'flex'; mainEl.style.flexDirection = 'column'; mainEl.style.gap = '16px'; }
 
   // 初始化币种搜索框
   const symInp = document.getElementById('calcSymbolInput');
