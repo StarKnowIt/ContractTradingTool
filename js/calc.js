@@ -11,7 +11,7 @@ let _calcATR      = 0;
 // ── 初始化 ────────────────────────────────────────────────────────────────────
 async function loadCalcPage() {
   // 检查是否有分析数据
-  const hasData = _lastAnalysisData && _lastAnalysisData.closes && _lastAnalysisData.closes.length > 0;
+  const hasData = window._lastAnalysisData && window._lastAnalysisData.closes && window._lastAnalysisData.closes.length > 0;
   const tipEl  = document.getElementById('calcNoDataTip');
   const mainEl = document.getElementById('calcMain');
   if (tipEl)  tipEl.style.display  = hasData ? 'none' : 'block';
@@ -19,10 +19,13 @@ async function loadCalcPage() {
   if (!hasData) return;
 
   // 从分析数据提取ATR
-  if (_lastAnalysisData.indicators?.atr) {
-    const atrVal = parseFloat(_lastAnalysisData.indicators.atr.value);
-    if (!isNaN(atrVal)) _calcATR = atrVal;
+  const data = window._lastAnalysisData;
+  if (data?.indicators?.atr) {
+    const atrVal = parseFloat(String(data.indicators.atr.value).replace(/[$,]/g, ''));
+    if (!isNaN(atrVal) && atrVal > 0) _calcATR = atrVal;
   }
+  console.log('[Calc] _lastAnalysisData keys:', data ? Object.keys(data) : 'null');
+  console.log('[Calc] ATR:', _calcATR, 'has highs:', !!data?.highs, 'highs.length:', data?.highs?.length);
 
   // 初始化币种搜索框
   const symInp = document.getElementById('calcSymbolInput');

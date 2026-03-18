@@ -239,7 +239,8 @@ async function loadAll(silent=false) {
 
     // Store for event page
     storeAnalysisData({
-      indicators, closes, price: parseFloat(klinesData[klinesData.length-1][4]),
+      indicators, closes, highs, lows, volumes,
+      price: parseFloat(klinesData[klinesData.length-1][4]),
       fib, vegas, elliott, symbol,
       ticker: ticker.status==='fulfilled' ? ticker.value : null,
       fgVal, frValue, lsRatio
