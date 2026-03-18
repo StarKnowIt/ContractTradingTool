@@ -1,5 +1,14 @@
 // ── analysis ──────────────────────────────────────────────────────────────────
 
+// DOM 安全赋值辅助函数
+function setEl(id, val, prop='textContent') {
+  const el = document.getElementById(id);
+  if (el) el[prop] = val;
+}
+function setElHTML(id, val) { setEl(id, val, 'innerHTML'); }
+function setElClass(id, val) { const el = document.getElementById(id); if(el) el.className = val; }
+
+
 async function loadAll(silent=false) {
   const symbol = document.getElementById('symbolSelect').value;
   // input 표시 동기화
@@ -11,7 +20,7 @@ async function loadAll(silent=false) {
 
   btn.disabled = true;
   setStatus('loading');
-  document.getElementById('errorBanner').classList.remove('show');
+  document.getElementById('errorBanner')?.classList.remove('show');
   document.getElementById('loaderText').textContent = '获取K线数据...';
   if (!silent) document.getElementById('loadingOverlay').classList.remove('hidden');
 
@@ -105,7 +114,7 @@ async function loadAll(silent=false) {
       frValue = fr;
       document.getElementById('fundingRate').textContent = fr.toFixed(4) + '%';
       document.getElementById('fundingRate').style.color = fr > 0 ? 'var(--red)' : fr < 0 ? 'var(--green)' : 'var(--text)';
-      document.getElementById('fundingNote').textContent = fr > 0.1 ? '偏高，多头付费' : fr < -0.05 ? '为负，空头付费' : '正常范围';
+      const fundingNoteEl = document.getElementById('fundingNote'); if(fundingNoteEl) fundingNoteEl.textContent = fr > 0.1 ? '偏高，多头付费' : fr < -0.05 ? '为负，空头付费' : '正常范围';
     } else {
       document.getElementById('fundingRate').textContent = 'N/A';
       document.getElementById('fundingNote').textContent = '现货交易对';
@@ -115,7 +124,7 @@ async function loadAll(silent=false) {
     if (oiData.status === 'fulfilled' && oiData.value?.openInterest) {
       const oi = parseFloat(oiData.value.openInterest);
       document.getElementById('openInterest').textContent = fmt(oi);
-      document.getElementById('oiNote').textContent = symbol.replace('USDT','') + ' 合约持仓';
+      const oiNoteEl = document.getElementById('oiNote'); if(oiNoteEl) oiNoteEl.textContent = symbol.replace('USDT','') + ' 合约持仓';
     } else {
       document.getElementById('openInterest').textContent = 'N/A';
     }
@@ -200,6 +209,7 @@ async function loadMonitor() {
 
   const dot = document.getElementById('monitorDot');
   if (dot) { dot.className = 'status-dot loading'; }
+  if (!dot) return; // monitor page not loaded
 
   const symbol = document.getElementById('symbolSelect')?.value || 'BTCUSDT';
   const coin   = symbol.replace('USDT','');
