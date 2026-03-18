@@ -24,6 +24,10 @@ async function loadCalcPage() {
     if (!isNaN(atrVal)) _calcATR = atrVal;
   }
 
+  // 初始化币种搜索框
+  const symInp = document.getElementById('calcSymbolInput');
+  if (symInp && !symInp.value) symInp.value = _calcCoin + '/USDT';
+
   // 获取当前价格
   await calcFetchPrice();
 
@@ -198,6 +202,12 @@ function calcRenderAutoSLTP(entry, posValue, isLong) {
   setEl('calcAutoTPDist', '距离 ' + tpPct + '%');
   setEl('calcAutoSLLoss', '-$' + slLoss,         'var(--red)');
   setEl('calcAutoTPGain', '+$' + tpGain,         'var(--green)');
+
+  // 风险回报比
+  const rrrEl = document.getElementById('calcAutoRRR');
+  if (rrrEl) { rrrEl.textContent = '1 : 2.0'; rrrEl.style.color = 'var(--green)'; }
+  const atrEl = document.getElementById('calcAutoATR');
+  if (atrEl) atrEl.textContent = 'ATR = $' + fmtPrice(atr);
 }
 
 // ── 手动止损止盈 ──────────────────────────────────────────────────────────────
@@ -246,75 +256,70 @@ function calcRenderSR() {
   const listEl = document.getElementById('calcSRList');
   if (!listEl) return;
 
-  if (!_lastAnalysisData) {
+  const data = window._lastAnalysisData;
+  if (!data || !data.closes || data.closes.length < 5) {
     listEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">请先在合约分析页加载数据</div>';
     return;
   }
 
-  const { indicators, closes, highs, lows } = _lastAnalysisData;
+  const { indicators, closes, highs, lows } = data;
   const price = _calcPrice || closes[closes.length - 1];
   const rows  = [];
 
-  // 斐波那契关键位
-  if (indicators?.lmtPct !== undefined || window._lastFibPct !== undefined) {
-    try {
-      const { calcFibonacci } = window;
-      const fib = calcFibonacci(highs, lows, closes);
-      if (fib && fib.levels) {
-        const keyLevels = [
-          { pct: '23.6', label: 'Fib 23.6%' },
-          { pct: '38.2', label: 'Fib 38.2%' },
-          { pct: '50.0', label: 'Fib 50.0%' },
-          { pct: '61.8', label: 'Fib 61.8%（黄金位）' },
-        ];
-        keyLevels.forEach(({ pct, label }) => {
-          const val = fib.levels[pct];
-          if (!val) return;
-          const isSupport = val < price;
-          rows.push({
-            label,
-            price: val,
-            type: isSupport ? 'support' : 'resistance',
-            dist: ((Math.abs(price - val) / price) * 100).toFixed(2)
-          });
+  // 斐波那契关键位（直接调用全局函数）
+  try {
+    const fib = calcFibonacci(highs, lows, closes);
+    if (fib && fib.levels) {
+      const keyLevels = [
+        { pct: '23.6', label: 'Fib 23.6%' },
+        { pct: '38.2', label: 'Fib 38.2%' },
+        { pct: '50.0', label: 'Fib 50%' },
+        { pct: '61.8', label: 'Fib 61.8% 黄金位' },
+      ];
+      keyLevels.forEach(({ pct, label }) => {
+        const val = fib.levels[pct];
+        if (!val || val <= 0) return;
+        rows.push({
+          label, price: val,
+          type: val < price ? 'support' : 'resistance',
+          dist: ((Math.abs(price - val) / price) * 100).toFixed(2)
         });
-      }
-    } catch(e) {}
-  }
+      });
+    }
+  } catch(e) {}
 
-  // EMA关键位
-  const emaList = [
+  // 指标关键价位
+  const keyInds = [
     { key: 'ema200', label: 'EMA200' },
     { key: 'vwap',   label: 'VWAP' },
+    { key: 'avwap',  label: '锚定VWAP' },
   ];
-  emaList.forEach(({ key, label }) => {
+  keyInds.forEach(({ key, label }) => {
     const ind = indicators?.[key];
     if (!ind || !ind.value) return;
-    const val = parseFloat(ind.value.replace(/[$,]/g, ''));
+    const val = parseFloat(String(ind.value).replace(/[$,K]/g, ''));
     if (isNaN(val) || val <= 0) return;
     rows.push({
-      label,
-      price: val,
+      label, price: val,
       type: val < price ? 'support' : 'resistance',
       dist: ((Math.abs(price - val) / price) * 100).toFixed(2)
     });
   });
 
-  // 摆동고점/저점
+  // 近期摆动高低点
   const n = closes.length;
-  let swingH = 0, swingL = Infinity;
+  const swingHighs = [], swingLows = [];
   for (let i = 2; i < n - 2; i++) {
-    if (highs[i] > highs[i-1] && highs[i] > highs[i-2] && highs[i] > highs[i+1] && highs[i] > highs[i+2]) {
-      if (highs[i] > swingH) swingH = highs[i];
-    }
-    if (lows[i] < lows[i-1] && lows[i] < lows[i-2] && lows[i] < lows[i+1] && lows[i] < lows[i+2]) {
-      if (lows[i] < swingL) swingL = lows[i];
-    }
+    if (highs[i] > highs[i-1] && highs[i] > highs[i-2] && highs[i] > highs[i+1] && highs[i] > highs[i+2])
+      swingHighs.push(highs[i]);
+    if (lows[i] < lows[i-1] && lows[i] < lows[i-2] && lows[i] < lows[i+1] && lows[i] < lows[i+2])
+      swingLows.push(lows[i]);
   }
-  if (swingH > 0) rows.push({ label: '近期摆动高点', price: swingH, type: 'resistance', dist: ((Math.abs(price - swingH) / price) * 100).toFixed(2) });
-  if (swingL < Infinity) rows.push({ label: '近期摆动低点', price: swingL, type: 'support', dist: ((Math.abs(price - swingL) / price) * 100).toFixed(2) });
+  const recentHigh = swingHighs.slice(-3).reduce((a,b) => Math.max(a,b), 0);
+  const recentLow  = swingLows.slice(-3).reduce((a,b) => Math.min(a,b), Infinity);
+  if (recentHigh > 0) rows.push({ label:'近期摆动高点', price:recentHigh, type:'resistance', dist:((Math.abs(price-recentHigh)/price)*100).toFixed(2) });
+  if (recentLow < Infinity) rows.push({ label:'近期摆动低点', price:recentLow, type:'support', dist:((Math.abs(price-recentLow)/price)*100).toFixed(2) });
 
-  // 거리순 정렬
   rows.sort((a, b) => parseFloat(a.dist) - parseFloat(b.dist));
 
   if (rows.length === 0) {
@@ -323,12 +328,11 @@ function calcRenderSR() {
   }
 
   listEl.innerHTML = rows.slice(0, 8).map(row => {
-    const isSupport = row.type === 'support';
-    const color = isSupport ? 'var(--green)' : 'var(--red)';
-    const tag   = isSupport ? '支撑' : '阻力';
+    const isSup = row.type === 'support';
+    const color = isSup ? 'var(--green)' : 'var(--red)';
     return `<div class="calc-sr-row">
       <div>
-        <span style="font-size:10px;color:${color};font-family:var(--mono);font-weight:700;margin-right:6px;">${tag}</span>
+        <span style="font-size:10px;color:${color};font-family:var(--mono);font-weight:700;margin-right:6px;">${isSup?'支撑':'阻力'}</span>
         <span style="font-size:12px;color:var(--text-dim);">${row.label}</span>
       </div>
       <div style="text-align:right;">
@@ -407,15 +411,12 @@ function calcRenderAdvice(lev, liqDistPct, entry, liqPrice, isLong, isCross, bal
 // ── 交互操作 ──────────────────────────────────────────────────────────────────
 function calcSelectCoin(coin) {
   _calcCoin = coin;
-  ['BTC','ETH','Custom'].forEach(c => {
-    const btn = document.getElementById('calcBtn' + c);
-    if (btn) btn.classList.toggle('active', c.toLowerCase() === coin);
-  });
+  document.getElementById('calcBtnBTC')?.classList.toggle('active', coin === 'BTC');
+  document.getElementById('calcBtnETH')?.classList.toggle('active', coin === 'ETH');
+  document.getElementById('calcBtnCustom')?.classList.toggle('active', coin === 'custom');
   const customInput = document.getElementById('calcCustomSymbol');
   if (customInput) customInput.style.display = coin === 'custom' ? 'block' : 'none';
-  if (coin !== 'custom') {
-    calcFetchPrice().then(calcUpdate);
-  }
+  calcFetchPrice().then(calcUpdate);
 }
 
 function calcOnCustomSymbol() {
@@ -478,4 +479,64 @@ function calcUseCurrentPrice() {
   const entryEl = document.getElementById('calcEntryPrice');
   if (entryEl) entryEl.value = _calcPrice;
   calcUpdate();
+}
+
+// ── 币种搜索下拉 ──────────────────────────────────────────────────────────────
+function calcOpenDropdown() {
+  const inp = document.getElementById('calcSymbolInput');
+  const dd  = document.getElementById('calcSymbolDropdown');
+  if (!inp || !dd) return;
+
+  // allSymbols 가져오기
+  const symbols = window._allSymbols || [];
+  if (symbols.length === 0) {
+    dd.innerHTML = '<div style="padding:10px;color:var(--text-muted);font-size:12px;">加载中...</div>';
+  } else {
+    calcRenderDropdown(symbols.slice(0, 30));
+  }
+
+  const rect = inp.getBoundingClientRect();
+  dd.style.top    = (rect.bottom + window.scrollY + 2) + 'px';
+  dd.style.left   = rect.left + 'px';
+  dd.style.width  = rect.width + 'px';
+  dd.style.display = 'block';
+}
+
+function calcFilterSymbols(val) {
+  const symbols = window._allSymbols || [];
+  const q = val.toUpperCase().replace('/', '').replace('USDT','');
+  const filtered = q
+    ? symbols.filter(s => s.base.includes(q) || s.symbol.includes(q))
+    : symbols.slice(0, 30);
+  calcRenderDropdown(filtered.slice(0, 30));
+
+  const dd = document.getElementById('calcSymbolDropdown');
+  if (dd) dd.style.display = 'block';
+}
+
+function calcRenderDropdown(symbols) {
+  const dd = document.getElementById('calcSymbolDropdown');
+  if (!dd) return;
+  dd.innerHTML = symbols.map(s =>
+    `<div class="symbol-dropdown-item" onmousedown="calcSelectSymbol('${s.base}')">
+      <span class="sym-name">${s.base}</span>
+      <span style="color:var(--text-muted);font-size:11px;">/USDT</span>
+    </div>`
+  ).join('');
+}
+
+function calcSelectSymbol(base) {
+  _calcCoin = base;
+  const inp = document.getElementById('calcSymbolInput');
+  if (inp) inp.value = base + '/USDT';
+  const hidden = document.getElementById('calcCoinValue');
+  if (hidden) hidden.value = base;
+  calcCloseDropdown();
+  calcFetchPrice().then(calcUpdate);
+  calcRenderSR();
+}
+
+function calcCloseDropdown() {
+  const dd = document.getElementById('calcSymbolDropdown');
+  if (dd) dd.style.display = 'none';
 }

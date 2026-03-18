@@ -28,12 +28,18 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div>
               <div class="calc-label">币种</div>
-              <div style="display:flex;gap:6px;">
-                <button class="calc-coin-btn active" id="calcBtnBTC" onclick="calcSelectCoin('BTC')">BTC</button>
-                <button class="calc-coin-btn" id="calcBtnETH" onclick="calcSelectCoin('ETH')">ETH</button>
-                <button class="calc-coin-btn" id="calcBtnCustom" onclick="calcSelectCoin('custom')">自定义</button>
+              <div style="position:relative;">
+                <input type="text" id="calcSymbolInput" placeholder="搜索币种 如BTC" autocomplete="off"
+                  class="symbol-input" style="width:100%;"
+                  onclick="calcOpenDropdown()"
+                  oninput="calcFilterSymbols(this.value)"
+                  onblur="setTimeout(calcCloseDropdown, 200)"/>
+                <div id="calcSymbolDropdown" style="display:none;position:fixed;
+                     background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r);
+                     z-index:99999;max-height:260px;overflow-y:auto;min-width:180px;
+                     box-shadow:0 8px 32px rgba(0,0,0,0.6);"></div>
               </div>
-              <input type="text" id="calcCustomSymbol" placeholder="如 SOL" style="display:none;margin-top:6px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:13px;padding:6px 10px;border-radius:var(--r);outline:none;width:100%;" oninput="calcOnCustomSymbol()"/>
+              <input type="hidden" id="calcCoinValue" value="BTC"/>
             </div>
             <div>
               <div class="calc-label">方向</div>
@@ -171,6 +177,14 @@
             <div class="futures-card">
               <div class="futures-card-label">止盈收益</div>
               <div class="futures-card-value" id="calcAutoTPGain" style="color:var(--green);">--</div>
+            </div>
+            <div class="futures-card">
+              <div class="futures-card-label">风险回报比</div>
+              <div class="futures-card-value" id="calcAutoRRR" style="color:var(--green);">1 : 2</div>
+            </div>
+            <div class="futures-card">
+              <div class="futures-card-label">ATR 波动值</div>
+              <div class="futures-card-value" id="calcAutoATR" style="font-size:13px;">--</div>
             </div>
           </div>
         </div>
