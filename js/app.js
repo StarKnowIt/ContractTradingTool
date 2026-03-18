@@ -1,5 +1,28 @@
 // ── app ──────────────────────────────────────────────────────────────────
 
+
+// ── 页面动态加载 ──────────────────────────────────────────────────────────────
+const _pageCache = {};
+
+async function loadPageContent(page) {
+  const containerId = 'page' + page.charAt(0).toUpperCase() + page.slice(1);
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // 已加载则跳过
+  if (_pageCache[page]) return;
+
+  try {
+    const r = await fetch(`pages/${page}.html?v=` + Date.now());
+    if (!r.ok) throw new Error('load failed');
+    const content = await r.text();
+    container.innerHTML = content;
+    _pageCache[page] = true;
+  } catch(e) {
+    console.warn(`Failed to load page: ${page}`, e);
+  }
+}
+
 function switchPage(page) {
   _currentPage = page;
   // Toggle views
@@ -119,9 +142,12 @@ function initCollapse() {
 // ── 앱 초기화 ─────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   initTheme();
-  initCollapse();
-  setTimeout(loadSymbolList, 100);
-  loadAll();
+  // 먼저 analysis 페이지 로딩 후 초기화
+  loadPageContent('analysis').then(() => {
+    initCollapse();
+    setTimeout(loadSymbolList, 100);
+    loadAll();
+  });
 
   document.getElementById('intervalSelect').addEventListener('change', loadAll);
 

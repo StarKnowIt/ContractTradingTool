@@ -1,0 +1,152 @@
+<div class="main">
+
+    <!-- 行情区 -->
+    <div class="price-hero" id="evPriceHero">
+      <div class="price-main">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <button class="ev-coin-btn active" id="evBtnBTC" onclick="evSelectCoin('BTC')">BTC</button>
+          <button class="ev-coin-btn" id="evBtnETH" onclick="evSelectCoin('ETH')">ETH</button>
+        </div>
+        <div class="price-value" id="evPrice">--</div>
+        <div class="price-change" id="evChange">--</div>
+      </div>
+      <div class="price-stats">
+        <div class="stat-item"><div class="stat-label">24H HIGH</div><div class="stat-value" id="evHigh">--</div></div>
+        <div class="stat-item"><div class="stat-label">24H LOW</div><div class="stat-value" id="evLow">--</div></div>
+        <div class="stat-item"><div class="stat-label">24H VOL</div><div class="stat-value" id="evVol">--</div></div>
+      </div>
+      <canvas class="mini-chart" id="evMiniChart" width="180" height="52"></canvas>
+    </div>
+
+    <!-- 系统建议区 -->
+    <div class="panel" id="evSuggestionPanel">
+      <div class="panel-header">
+        <div class="panel-title">系统方向建议</div>
+        <span class="panel-badge" id="evSugBadge">分析中</span>
+      </div>
+      <div class="panel-body">
+        <!-- 时间维度选择 -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+          <button class="ev-time-btn active" data-duration="10" onclick="evSelectDuration(10)">10分钟</button>
+          <button class="ev-time-btn" data-duration="30" onclick="evSelectDuration(30)">30分钟</button>
+          <button class="ev-time-btn" data-duration="60" onclick="evSelectDuration(60)">1小时</button>
+          <button class="ev-time-btn" data-duration="1440" onclick="evSelectDuration(1440)">1天</button>
+        </div>
+        <!-- 建议结果 -->
+        <div style="display:flex;align-items:center;gap:20px;padding:16px;background:var(--bg2);border-radius:var(--r-lg);margin-bottom:14px;flex-wrap:wrap;">
+          <div style="text-align:center;flex-shrink:0;">
+            <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono);margin-bottom:6px;letter-spacing:1px;">方向建议</div>
+            <div style="font-size:28px;font-weight:700;font-family:var(--mono);" id="evDirection">--</div>
+          </div>
+          <div style="text-align:center;flex-shrink:0;">
+            <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono);margin-bottom:6px;letter-spacing:1px;">置信度</div>
+            <div style="font-size:18px;font-weight:700;font-family:var(--mono);" id="evConfidence">--</div>
+          </div>
+          <div style="flex:1;min-width:160px;">
+            <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono);margin-bottom:6px;letter-spacing:1px;">核心依据</div>
+            <div style="font-size:12px;color:var(--text-dim);line-height:1.8;" id="evReasons">--</div>
+          </div>
+        </div>
+        <!-- 风险提示 -->
+        <div style="font-size:11px;color:var(--text-muted);padding:8px 12px;background:rgba(240,185,11,0.06);border:1px solid rgba(240,185,11,0.15);border-radius:var(--r);line-height:1.6;">
+          ⚠ 本建议基于技术分析，仅供参考。市场存在不确定性，请理性参与模拟交易。
+        </div>
+      </div>
+    </div>
+
+    <!-- 下单区 -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">模拟下单</div>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--gold);">余额：<span id="evBalance">1000.00</span> USDT</span>
+      </div>
+      <div class="panel-body">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <!-- 金额输入 -->
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono);margin-bottom:8px;letter-spacing:1px;">下单金额 (USDT)</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <input type="number" id="evAmount" value="10" min="1" max="10000"
+                style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:16px;padding:8px 12px;border-radius:var(--r);outline:none;width:120px;"/>
+              <button class="ev-quick-btn" onclick="evSetAmount(10)">10</button>
+              <button class="ev-quick-btn" onclick="evSetAmount(50)">50</button>
+              <button class="ev-quick-btn" onclick="evSetAmount(100)">100</button>
+              <button class="ev-quick-btn" onclick="evSetAmount(500)">500</button>
+            </div>
+          </div>
+          <!-- 赔率说明 -->
+          <div style="font-size:12px;color:var(--text-muted);font-family:var(--mono);">
+            猜对赔率 <span style="color:var(--green);font-weight:700;">+80%</span> · 下单 <span id="evAmountShow" style="color:var(--gold);">10</span> USDT · 猜对得 <span id="evWinShow" style="color:var(--green);">18</span> USDT
+          </div>
+          <!-- 买涨买跌 -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <button class="ev-order-btn bull" onclick="evPlaceOrder('up')">
+              <span style="font-size:18px;">▲</span>
+              <span>买涨</span>
+              <span style="font-size:11px;opacity:0.8;" id="evUpCoin">BTC 涨</span>
+            </button>
+            <button class="ev-order-btn bear" onclick="evPlaceOrder('down')">
+              <span style="font-size:18px;">▼</span>
+              <span>买跌</span>
+              <span style="font-size:11px;opacity:0.8;" id="evDownCoin">BTC 跌</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 持仓区 -->
+    <div class="panel" id="evActivePanel">
+      <div class="panel-header">
+        <div class="panel-title">当前持仓</div>
+        <span class="panel-badge badge-blue" id="evActiveBadge">0笔</span>
+      </div>
+      <div class="panel-body">
+        <div id="evActiveList">
+          <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">暂无持仓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 统计区 -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">账户统计</div>
+      </div>
+      <div class="panel-body">
+        <div class="futures-grid" style="margin-bottom:14px;">
+          <div class="futures-card">
+            <div class="futures-card-label">总盈亏</div>
+            <div class="futures-card-value" id="evTotalPnl">--</div>
+          </div>
+          <div class="futures-card">
+            <div class="futures-card-label">总胜率</div>
+            <div class="futures-card-value" id="evWinRate">--</div>
+          </div>
+          <div class="futures-card">
+            <div class="futures-card-label">跟随建议胜率</div>
+            <div class="futures-card-value" id="evFollowRate">--</div>
+          </div>
+          <div class="futures-card">
+            <div class="futures-card-label">总交易次数</div>
+            <div class="futures-card-value" id="evTotalTrades">0</div>
+          </div>
+        </div>
+        <button onclick="evResetAccount()" style="font-size:11px;color:var(--text-muted);background:none;border:1px solid var(--border2);padding:5px 12px;border-radius:var(--r);cursor:pointer;font-family:var(--mono);">重置账户</button>
+      </div>
+    </div>
+
+    <!-- 历史订单 -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">历史订单</div>
+        <span class="panel-badge badge-blue" id="evHistBadge">0笔</span>
+      </div>
+      <div class="panel-body">
+        <div id="evHistList">
+          <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">暂无历史</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
