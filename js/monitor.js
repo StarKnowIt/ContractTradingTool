@@ -142,7 +142,7 @@ async function monLoadLiquidation() {
   try {
     const symbols = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT','DOGEUSDT','ADAUSDT','AVAXUSDT','LINKUSDT','DOTUSDT'];
     const results = await Promise.allSettled(
-      symbols.map(s => fetch(`${API}/api/proxy?u=${encodeURIComponent(BINANCE_F + '/fapi/v1/forceOrders?symbol=' + s + '&limit=10')}`).then(r=>r.json()))
+      symbols.map(s => fetch(`${API}/api/force?symbol=${s}`).then(r=>r.json()))
     );
 
     const orders = [];
