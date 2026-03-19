@@ -837,10 +837,24 @@ select:focus { border-color:var(--gold); box-shadow:0 0 0 2px var(--gold-dim); }
   .mobile-tab-label { font-size:8px; letter-spacing:0; }
   .mobile-tab-icon  { font-size:18px; }
   .mobile-tab { padding:4px 1px; gap:2px; }
+
+  /* header 进一步压缩，防止元素溢出屏幕 */
+  .logo             { font-size:10px; letter-spacing:1px; }
+  .symbol-input     { width:65px; }
+  #intervalSelect   { width:52px; padding:5px 14px 5px 4px; }
+  .btn-primary      { padding:4px 6px; font-size:9px; }
+  #themeToggle      { width:24px; height:24px; font-size:11px; }
 }
 @media(max-width:320px) {
   .mobile-tab-label { display:none; }
   .mobile-tab { padding:6px 2px; }
+
+  /* 极窄屏 header */
+  .logo             { font-size:9px; letter-spacing:0.5px; }
+  .symbol-input     { width:58px; }
+  #intervalSelect   { width:46px; padding:4px 12px 4px 4px; }
+  .btn-primary      { padding:4px 5px; font-size:8px; }
+  #themeToggle      { width:22px; height:22px; font-size:10px; }
 }
 
 /* FG 카드 그리드 - 모바일 대응 */
