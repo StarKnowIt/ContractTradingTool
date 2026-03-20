@@ -42,6 +42,10 @@ app.get('/', (req, res) => {
 
 app.get('/ping', (req, res) => res.json({ ok: true, t: Date.now() }));
 
-// 启动服务并输出监听日志，便于本地调试确认。
-app.listen(PORT, () => console.log(`CTBox API running on port ${PORT}`));
+// 在本地开发环境启动监听；Vercel Serverless 环境由平台接管。
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => console.log(`CTBox API running on port ${PORT}`));
+}
+
+module.exports = app;
 
