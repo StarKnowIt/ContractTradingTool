@@ -190,7 +190,8 @@ function renderScore(indicators) {
   badge.textContent = badgeText;
 }
 
-function updateMiniChart(closes) {
+function updateMiniChart(closes, targetId) {
+  if (!Array.isArray(closes) || closes.length < 2) return;
   // 折线坐标归一化到固定画布（w=200,h=60），用于顶部小图。
   const min = Math.min(...closes);
   const max = Math.max(...closes);
@@ -202,11 +203,59 @@ function updateMiniChart(closes) {
   // 起点到终点上涨则用绿色，否则红色。
   const isUp = closes[closes.length-1] > closes[0];
   const color = isUp ? 'var(--green)' : 'var(--red)';
-  document.getElementById('miniChartLine').setAttribute('points', pts);
-  document.getElementById('miniChartLine').setAttribute('stroke', color);
-  document.getElementById('miniChartFill').setAttribute('points', fillPts);
-  document.querySelector('#chartGrad stop:first-child').setAttribute('stop-color', isUp ? '#00e676' : '#ff3d57');
-  document.querySelector('#chartGrad stop:last-child').setAttribute('stop-color', isUp ? '#00e676' : '#ff3d57');
+
+  // 事件页传入 canvas id（如 evMiniChart）时，走 canvas 渲染。
+  if (targetId) {
+    const canvas = document.getElementById(targetId);
+    if (canvas && typeof canvas.getContext === 'function') {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const cw = canvas.width || 180;
+      const ch = canvas.height || 52;
+      const padX = 4;
+      const padTop = 4;
+      const usableW = Math.max(1, cw - padX * 2);
+      const usableH = Math.max(1, ch - 8);
+
+      const points = closes.map((c, i) => ({
+        x: padX + (i / (closes.length - 1)) * usableW,
+        y: padTop + (1 - (c - min) / range) * usableH
+      }));
+
+      ctx.clearRect(0, 0, cw, ch);
+
+      // 先画面积，再画折线，保持和分析页视觉语义一致。
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, ch - 2);
+      points.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.lineTo(points[points.length - 1].x, ch - 2);
+      ctx.closePath();
+      ctx.fillStyle = isUp ? 'rgba(0,230,118,0.14)' : 'rgba(255,61,87,0.14)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+      ctx.strokeStyle = isUp ? '#00e676' : '#ff3d57';
+      ctx.lineWidth = 1.6;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      return;
+    }
+  }
+
+  // 默认行为：分析页 SVG 小图。
+  const lineEl = document.getElementById('miniChartLine');
+  const fillEl = document.getElementById('miniChartFill');
+  const gradStart = document.querySelector('#chartGrad stop:first-child');
+  const gradEnd = document.querySelector('#chartGrad stop:last-child');
+  if (!lineEl || !fillEl || !gradStart || !gradEnd) return;
+  lineEl.setAttribute('points', pts);
+  lineEl.setAttribute('stroke', color);
+  fillEl.setAttribute('points', fillPts);
+  gradStart.setAttribute('stop-color', isUp ? '#00e676' : '#ff3d57');
+  gradEnd.setAttribute('stop-color', isUp ? '#00e676' : '#ff3d57');
 }
 
 function renderFearGreed(value, text) {
@@ -477,8 +526,8 @@ function renderSentimentTags(indicators, fundingRate, fgVal, lsRatio) {
 
   // 第七层：情绪面标签（资金费率/多空比/恐惧贪婪）。
   if (fundingRate !== null) {
-    // 注意：上层有的地方已是百分比，有的地方是小数，这里沿用现有逻辑不改行为。
-    const fr = parseFloat(fundingRate) * 100;
+    // analysis.js 传入的是“百分比值”（例如 0.0123% -> 0.0123），这里不再二次 *100。
+    const fr = parseFloat(fundingRate);
     if (fr > 0.1) tags.push({ text: `资金费率偏高 ${fr.toFixed(3)}%`, cls: 'badge-red' });
     else if (fr > 0.05) tags.push({ text: `资金费率偏高 ${fr.toFixed(3)}%`, cls: 'badge-amber' });
     else if (fr < -0.05) tags.push({ text: `资金费率为负 ${fr.toFixed(3)}%`, cls: 'badge-green' });
@@ -1173,7 +1222,7 @@ function renderEventPage(data) {
     `<strong style="color:var(--amber);">⚠ 事件合约风险提示</strong><br>
     不能提前平仓，需持有至到期。最大亏损 = 保费本金（每日上限10,000 USDT）。
     ${confidence < 25 ? '<br><strong style="color:var(--red)">当前置信度低，建议观望不入场。</strong>' : ''}
-    ${Math.abs(parseFloat(frValue||0)*100) > 0.15 ? `<br>资金费率偏高(${(parseFloat(frValue||0)*100).toFixed(3)}%)，多头持仓成本增加，做多需谨慎。` : ''}`;
+    ${Math.abs(parseFloat(frValue||0)) > 0.15 ? `<br>资金费率偏高(${parseFloat(frValue||0).toFixed(3)}%)，多头持仓成本增加，做多需谨慎。` : ''}`;
 
   document.getElementById('eventReasoning').innerHTML = buildEventReasoning(dims, indicators, coin, callPut, pct, netScore, fgVal, frValue, baseRatio);
 
@@ -1222,7 +1271,7 @@ function buildEventDimensions(indicators, fib, vegas, elliott, fgVal, frValue, l
   let sentScore = 0;
   if (fgVal !== null) { const fv = parseInt(fgVal); if (fv < 30) sentScore += 1; else if (fv > 70) sentScore -= 1; }
   if (lsRatio !== null) { if (lsRatio > 1.3) sentScore += 0.5; else if (lsRatio < 0.77) sentScore -= 0.5; }
-  if (frValue !== null) { const fr = parseFloat(frValue)*100; if (fr < -0.05) sentScore += 0.8; else if (fr > 0.1) sentScore -= 0.5; }
+  if (frValue !== null) { const fr = parseFloat(frValue); if (fr < -0.05) sentScore += 0.8; else if (fr > 0.1) sentScore -= 0.5; }
   dims.push({ name:'市场情绪', score: sentScore, weight: 2.3, label: sentScore > 0.5 ? '偏恐惧(利多)' : sentScore < -0.5 ? '贪婪(利空)' : '中性' });
 
   let waveScore = 0;
@@ -1264,7 +1313,7 @@ function buildKeySigs(indicators, fgVal, frValue, netScore) {
   }
 
   if (frValue !== null) {
-    const fr = parseFloat(frValue)*100;
+    const fr = parseFloat(frValue);
     if (fr < -0.05) sigs.push({ type:'bull', icon:'◈', text:`资金费率为负(${fr.toFixed(3)}%)，空头付费，轧空行情概率增加`, weight:2 });
     else if (fr > 0.15) sigs.push({ type:'bear', icon:'◈', text:`资金费率过高(${fr.toFixed(3)}%)，多头过度拥挤，注意回调清仓`, weight:2 });
   }
@@ -1280,7 +1329,7 @@ function buildEventReasoning(dims, indicators, coin, callPut, pct, netScore, fgV
   // 生成“自然语言推理说明”，用于事件页解释区块。
   const rsiV = indicators?.rsi ? parseFloat(indicators.rsi.value) : 50;
   const isUP = netScore > 0;
-  const frNum = parseFloat(frValue||0)*100;
+  const frNum = parseFloat(frValue||0);
 
   let html = `<div style="margin-bottom:12px;">
     <strong style="color:${isUP?'var(--green)':netScore<0?'var(--red)':'var(--amber)'};font-family:var(--mono);">
@@ -1305,7 +1354,7 @@ function buildEventReasoning(dims, indicators, coin, callPut, pct, netScore, fgV
 
   html += `<div style="margin-bottom:10px;padding-left:12px;border-left:2px solid var(--border);">
     <strong style="color:var(--text-dim);font-size:12px;">四、情绪与合约数据</strong><br>
-    <span style="font-size:12px;">${fgVal?`恐惧贪婪指数${fgVal}，${parseInt(fgVal)<30?'市场极度恐惧，历史上往往是中线买入时机':parseInt(fgVal)>70?'市场极度贪婪，注意风险':' 情绪中性'}。`:''}${frValue?`资金费率${(parseFloat(frValue)*100).toFixed(4)}%，${parseFloat(frValue)*100>0.1?'多头拥挤，警惕轧多':parseFloat(frValue)*100<-0.05?'空头付费，轧空行情概率增加':'属于正常范围'}。`:''}</span>
+    <span style="font-size:12px;">${fgVal?`恐惧贪婪指数${fgVal}，${parseInt(fgVal)<30?'市场极度恐惧，历史上往往是中线买入时机':parseInt(fgVal)>70?'市场极度贪婪，注意风险':' 情绪中性'}。`:''}${frValue?`资金费率${parseFloat(frValue).toFixed(4)}%，${parseFloat(frValue)>0.1?'多头拥挤，警惕轧多':parseFloat(frValue)<-0.05?'空头付费，轧空行情概率增加':'属于正常范围'}。`:''}</span>
   </div>`;
 
   html = html.replace('一、趋势分析</strong><br>', `一、趋势分析（支撑 ${isUP?'CALL':'PUT'} 方向）</strong><br>`);
@@ -1326,7 +1375,7 @@ function buildEventReasoning(dims, indicators, coin, callPut, pct, netScore, fgV
 
 function renderEventStrategy(indicators, netScore, price, coin, baseRatio, expirySugg) {
   // 策略参考卡：把方向、RSI、Fib、资金费率、到期时间做模板化展示。
-  const fr = parseFloat(window._lastFrValue||0)*100;
+  const fr = parseFloat(window._lastFrValue||0);
   const fibPct = window._lastFibPct||50;
   const rsiV   = indicators?.rsi ? parseFloat(indicators.rsi.value) : 50;
 
@@ -2057,7 +2106,7 @@ function getBriefPlainText(data) {
 - 量价：${indicators?.volume?.type==='bull'?'放量上涨':'放量下跌'}
 
 【合约市场】
-- 资金费率：${frValue?((parseFloat(frValue)*100).toFixed(4)+'%'):'N/A'}
+- 资金费率：${frValue?(parseFloat(frValue).toFixed(4)+'%'):'N/A'}
 - 多空比：${lsRatio?lsRatio.toFixed(2):'N/A'}
 - 恐惧贪婪：${fgVal||'--'}
 
@@ -2084,7 +2133,7 @@ function generateBrief(data) {
   const now      = new Date();
   const tf       = window._lastInterval || '1h';
   const tfText   = { '15m':'15分钟', '1h':'1小时', '4h':'4小时', '1d':'日线' }[tf] || '1小时';
-  const frNum    = frValue ? parseFloat(frValue)*100 : 0;
+  const frNum    = frValue ? parseFloat(frValue) : 0;
   const fibPct   = window._lastFibPct || 50;
 
   // longScore 是“技术面偏向分”，用于映射 LONG/SHORT/WAIT 文案。
