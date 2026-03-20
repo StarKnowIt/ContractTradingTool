@@ -63,6 +63,28 @@ npm run serve
 
 打开：`http://localhost:5173`
 
+## 单元测试
+
+### 运行方式
+
+```bash
+npm test
+```
+
+### 当前已覆盖的测试点
+
+- `services/cache.js`
+  - `cSet/cGet` 在 TTL 内可正确读取
+  - TTL 过期后会返回 `null`
+- `routes/live.js`（`LIVE_PROVIDER=mock`）
+  - `GET /api/live` 返回结构完整的 mock 数据
+  - 返回列表只包含 `live_status=1` 的直播项
+
+### 补充说明
+
+- 测试框架使用 Node 内置 `node:test`，不依赖 Jest。
+- 路由测试使用 `supertest` 做 HTTP 级验证。
+
 ## 核心数据流（小白版）
 
 ### 分析页主链路
