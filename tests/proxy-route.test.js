@@ -1,36 +1,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const express = require('express');
 const request = require('supertest');
+const { mountRouteWithMockedFetchService } = require('./helpers/route-test-utils');
 
 function buildProxyApp({ allowedDomains = 'api.binance.com', fakeFetch }) {
-  process.env.PROXY_ALLOWED_DOMAINS = allowedDomains;
-
-  const fetchServicePath = require.resolve('../services/fetch');
-  const proxyRoutePath = require.resolve('../routes/proxy');
-  const oldFetchService = require.cache[fetchServicePath];
-  delete require.cache[fetchServicePath];
-  delete require.cache[proxyRoutePath];
-
-  require.cache[fetchServicePath] = {
-    id: fetchServicePath,
-    filename: fetchServicePath,
-    loaded: true,
-    exports: { fetch: fakeFetch, UA: 'test-ua' }
-  };
-
-  const app = express();
-  app.use('/api', require('../routes/proxy'));
-
-  return {
-    app,
-    restore() {
-      delete require.cache[proxyRoutePath];
-      if (oldFetchService) require.cache[fetchServicePath] = oldFetchService;
-      else delete require.cache[fetchServicePath];
-      delete process.env.PROXY_ALLOWED_DOMAINS;
-    }
-  };
+  return mountRouteWithMockedFetchService({
+    routeModulePath: require.resolve('../routes/proxy'),
+    fetchServiceExports: { fetch: fakeFetch, UA: 'test-ua' },
+    env: { PROXY_ALLOWED_DOMAINS: allowedDomains }
+  });
 }
 
 test('GET /api/proxy should return 400 when u is missing', async () => {

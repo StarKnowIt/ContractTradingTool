@@ -1,33 +1,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const express = require('express');
 const request = require('supertest');
+const { mountRouteWithMockedFetchService } = require('./helpers/route-test-utils');
 
 function buildSentimentApp(fakeFetchJSON) {
-  const fetchServicePath = require.resolve('../services/fetch');
-  const sentimentRoutePath = require.resolve('../routes/sentiment');
-  const oldFetchService = require.cache[fetchServicePath];
-  delete require.cache[fetchServicePath];
-  delete require.cache[sentimentRoutePath];
-
-  require.cache[fetchServicePath] = {
-    id: fetchServicePath,
-    filename: fetchServicePath,
-    loaded: true,
-    exports: { fetchJSON: fakeFetchJSON }
-  };
-
-  const app = express();
-  app.use('/api', require('../routes/sentiment'));
-
-  return {
-    app,
-    restore() {
-      delete require.cache[sentimentRoutePath];
-      if (oldFetchService) require.cache[fetchServicePath] = oldFetchService;
-      else delete require.cache[fetchServicePath];
-    }
-  };
+  return mountRouteWithMockedFetchService({
+    routeModulePath: require.resolve('../routes/sentiment'),
+    fetchServiceExports: { fetchJSON: fakeFetchJSON }
+  });
 }
 
 test('GET /api/cg should reject invalid coin input', async () => {

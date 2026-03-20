@@ -1,37 +1,17 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const express = require('express');
 const request = require('supertest');
+const { mountRouteWithMockedFetchService } = require('./helpers/route-test-utils');
 
 function buildMarketApp({ fetchJSONImpl, fetchImpl }) {
-  const fetchServicePath = require.resolve('../services/fetch');
-  const marketRoutePath = require.resolve('../routes/market');
-  const oldFetchService = require.cache[fetchServicePath];
-  delete require.cache[fetchServicePath];
-  delete require.cache[marketRoutePath];
-
-  require.cache[fetchServicePath] = {
-    id: fetchServicePath,
-    filename: fetchServicePath,
-    loaded: true,
-    exports: {
+  return mountRouteWithMockedFetchService({
+    routeModulePath: require.resolve('../routes/market'),
+    fetchServiceExports: {
       fetchJSON: fetchJSONImpl,
       fetch: fetchImpl || (async () => ({ ok: false })),
       UA: 'test-ua'
     }
-  };
-
-  const app = express();
-  app.use('/api', require('../routes/market'));
-
-  return {
-    app,
-    restore() {
-      delete require.cache[marketRoutePath];
-      if (oldFetchService) require.cache[fetchServicePath] = oldFetchService;
-      else delete require.cache[fetchServicePath];
-    }
-  };
+  });
 }
 
 test('GET /api/ticker should fallback to OKX when Binance fails', async () => {

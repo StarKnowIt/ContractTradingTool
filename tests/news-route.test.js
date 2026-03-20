@@ -1,37 +1,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const express = require('express');
 const request = require('supertest');
+const { mountRouteWithMockedFetchService } = require('./helpers/route-test-utils');
 
 function buildNewsAppWithFakeFetch(fakeFetch, sources) {
-  process.env.NEWS_RSS_SOURCES = JSON.stringify(sources);
-
-  const fetchServicePath = require.resolve('../services/fetch');
-  const newsRoutePath = require.resolve('../routes/news');
-  const oldFetchService = require.cache[fetchServicePath];
-  delete require.cache[fetchServicePath];
-  delete require.cache[newsRoutePath];
-
-  require.cache[fetchServicePath] = {
-    id: fetchServicePath,
-    filename: fetchServicePath,
-    loaded: true,
-    exports: { fetch: fakeFetch, UA: 'test-ua' }
-  };
-
-  const router = require('../routes/news');
-  const app = express();
-  app.use('/api', router);
-
-  return {
-    app,
-    restore() {
-      delete require.cache[newsRoutePath];
-      if (oldFetchService) require.cache[fetchServicePath] = oldFetchService;
-      else delete require.cache[fetchServicePath];
-      delete process.env.NEWS_RSS_SOURCES;
-    }
-  };
+  return mountRouteWithMockedFetchService({
+    routeModulePath: require.resolve('../routes/news'),
+    fetchServiceExports: { fetch: fakeFetch, UA: 'test-ua' },
+    env: { NEWS_RSS_SOURCES: JSON.stringify(sources) }
+  });
 }
 
 test('GET /api/news should parse RSS and keep coin-related titles', async () => {

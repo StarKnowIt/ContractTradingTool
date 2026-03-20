@@ -1,33 +1,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const express = require('express');
 const request = require('supertest');
+const { mountRouteWithMockedFetchService } = require('./helpers/route-test-utils');
 
 function buildFuturesApp(fakeFetch) {
-  const fetchServicePath = require.resolve('../services/fetch');
-  const futuresRoutePath = require.resolve('../routes/futures');
-  const oldFetchService = require.cache[fetchServicePath];
-  delete require.cache[fetchServicePath];
-  delete require.cache[futuresRoutePath];
-
-  require.cache[fetchServicePath] = {
-    id: fetchServicePath,
-    filename: fetchServicePath,
-    loaded: true,
-    exports: { fetch: fakeFetch, UA: 'test-ua' }
-  };
-
-  const app = express();
-  app.use('/api', require('../routes/futures'));
-
-  return {
-    app,
-    restore() {
-      delete require.cache[futuresRoutePath];
-      if (oldFetchService) require.cache[fetchServicePath] = oldFetchService;
-      else delete require.cache[fetchServicePath];
-    }
-  };
+  return mountRouteWithMockedFetchService({
+    routeModulePath: require.resolve('../routes/futures'),
+    fetchServiceExports: { fetch: fakeFetch, UA: 'test-ua' }
+  });
 }
 
 test('GET /api/funding should return [] when upstream is not ok', async () => {
