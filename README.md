@@ -82,6 +82,12 @@ npm test
 - `routes/news.js`
   - RSS `item` 解析与币种关键词过滤
   - 全部新闻源抓取失败时，降级返回 `200` + 空列表（不中断页面）
+- `routes/proxy.js`
+  - `u` 参数缺失时返回 `400`
+  - 非白名单域名会被拦截（`403`）
+- `routes/market.js`
+  - `ticker` 在 Binance 失败时可回退到 OKX
+  - `depth` 在上游全部失败时返回空深度兜底
 - `services/fetch.js`
   - `fetchJSON` 缓存命中（同 URL TTL 内仅请求一次）
   - 上游非 `ok` 响应时正确抛出 HTTP 错误
