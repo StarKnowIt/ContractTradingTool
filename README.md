@@ -178,6 +178,7 @@ cp .env.example .env
 - `LIVE_PROVIDER`
   - `generic`：先抓页面提取 token，再请求 API（默认）
   - `json`：直接请求 JSON API（无需页面抓取）
+  - `mock`：使用后端内置演示数据（本地调试最省心）
 
 - `LIVE_TOKEN_REGEX`
   - `generic` 模式下用于提取 token 的正则（第 1 个捕获组为 token）
@@ -212,6 +213,7 @@ LIVE_LIST_PATH=list
 说明：
 - 上面配置可直接跑通大部分分析/监控数据（直播除外）
 - 直播数据源因站点差异较大，建议你确定目标站后再补 `LIVE_*`
+- 若只想先看直播页面效果，可把 `LIVE_PROVIDER` 改为 `mock`
 
 ## 已知问题与限制
 
