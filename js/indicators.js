@@ -875,10 +875,22 @@ function calcKeltner(highs, lows, closes, emaPeriod=20, atrPeriod=10, mult=2) {
   const atrObj = calcATR(highs, lows, closes, atrPeriod);
   const atr = atrObj.atrArr || [];
   const atrOffset = atrPeriod - 1;
+  const startAt = Math.max(emaPeriod - 1, atrOffset);
   return closes.map((_, i) => ({
-    upper: ema[i] != null && atr[i - atrOffset] != null ? ema[i] + mult * atr[i - atrOffset] : null,
+    // 显式索引，避免 i < atrOffset 时出现负索引访问（即便 JS 返回 undefined）。
+    upper: (() => {
+      if (i < startAt || ema[i] == null) return null;
+      const atrIdx = i - atrOffset;
+      if (atrIdx < 0 || atrIdx >= atr.length || atr[atrIdx] == null) return null;
+      return ema[i] + mult * atr[atrIdx];
+    })(),
     mid:   ema[i],
-    lower: ema[i] != null && atr[i - atrOffset] != null ? ema[i] - mult * atr[i - atrOffset] : null,
+    lower: (() => {
+      if (i < startAt || ema[i] == null) return null;
+      const atrIdx = i - atrOffset;
+      if (atrIdx < 0 || atrIdx >= atr.length || atr[atrIdx] == null) return null;
+      return ema[i] - mult * atr[atrIdx];
+    })(),
   }));
 }
 

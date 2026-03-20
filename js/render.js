@@ -1698,23 +1698,25 @@ function renderFundingHistory(frData, symbol) {
   }
 
   const recent = frData.slice(-12);
-  const maxFr  = Math.max(...recent.map(r => Math.abs(parseFloat(r.fundingRate)*100)));
-  const avgFr  = recent.reduce((s,r) => s + parseFloat(r.fundingRate)*100, 0) / recent.length;
+  // 注意：frData 来自交易所原始接口，fundingRate 是小数（如 0.0001 = 0.01%）。
+  // 因此这里需要 *100 转成“百分比数值”再展示。
+  const maxFr  = Math.max(...recent.map(r => Math.abs(parseFloat(r.fundingRate) * 100)));
+  const avgFr  = recent.reduce((s, r) => s + parseFloat(r.fundingRate) * 100, 0) / recent.length;
 
   let html = `<div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;font-family:var(--mono);">近${recent.length}期资金费率趋势（均值 ${avgFr.toFixed(4)}%）</div>`;
   html += recent.map(r => {
-    const fr = parseFloat(r.fundingRate)*100;
-    const barW = maxFr > 0 ? Math.abs(fr)/maxFr*80 : 0;
+    const frPct = parseFloat(r.fundingRate) * 100;
+    const barW = maxFr > 0 ? Math.abs(frPct) / maxFr * 80 : 0;
     const time = new Date(r.fundingTime).toLocaleTimeString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-    const col  = fr > 0 ? 'var(--red)' : 'var(--green)';
+    const col  = frPct > 0 ? 'var(--red)' : 'var(--green)';
     return `<div class="fr-bar-row">
       <div class="fr-label">${time}</div>
       <div class="fr-track">
-        ${fr >= 0
+        ${frPct >= 0
           ? `<div class="fr-bar-pos" style="width:${barW}%;background:rgba(240,56,74,0.5)"></div>`
           : `<div class="fr-bar-neg" style="width:${barW}%;background:rgba(0,217,126,0.5)"></div>`}
       </div>
-      <div class="fr-val" style="color:${col}">${fr>0?'+':''}${fr.toFixed(4)}%</div>
+      <div class="fr-val" style="color:${col}">${frPct > 0 ? '+' : ''}${frPct.toFixed(4)}%</div>
     </div>`;
   }).join('');
 
@@ -1766,13 +1768,14 @@ function renderRiskAlerts(coin, klines, ticker, frData) {
   const change  = ticker ? parseFloat(ticker.priceChangePercent) : 0;
   const vol24h  = ticker ? parseFloat(ticker.quoteVolume) : 0;
   const price   = ticker ? parseFloat(ticker.lastPrice) : 0;
-  const frLast  = frData?.length ? parseFloat(frData[frData.length-1]?.fundingRate||0)*100 : 0;
+  // frData 的 fundingRate 仍是原始小数，这里转换成百分比数值后再做阈值判断。
+  const frPctLast  = frData?.length ? parseFloat(frData[frData.length-1]?.fundingRate || 0) * 100 : 0;
 
   // alerts 每项包含：级别、名称、解释、条形强度、方向色。
   const alerts = [];
   if (Math.abs(change) > 5)  alerts.push({ level:'high',   name:'大幅价格异动',   desc:`24H涨跌 ${change.toFixed(2)}%，超过5%预警线，市场波动剧烈，建议降低仓位。`, bar:Math.min(100,Math.abs(change)*10), type:'bear' });
-  if (frLast > 0.15)         alerts.push({ level:'high',   name:'资金费率过高',   desc:`资金费率${frLast.toFixed(4)}%，多头拥挤，极端情况下可能引发多杀多踩踏行情。`, bar:Math.min(100,frLast*500), type:'bear' });
-  if (frLast < -0.1)         alerts.push({ level:'medium', name:'资金费率极负',   desc:`资金费率${frLast.toFixed(4)}%，空头极度拥挤，小幅上涨可能触发连环轧空。`, bar:70, type:'bull' });
+  if (frPctLast > 0.15)      alerts.push({ level:'high',   name:'资金费率过高',   desc:`资金费率${frPctLast.toFixed(4)}%，多头拥挤，极端情况下可能引发多杀多踩踏行情。`, bar:Math.min(100, frPctLast * 500), type:'bear' });
+  if (frPctLast < -0.1)      alerts.push({ level:'medium', name:'资金费率极负',   desc:`资金费率${frPctLast.toFixed(4)}%，空头极度拥挤，小幅上涨可能触发连环轧空。`, bar:70, type:'bull' });
   if (vol24h > 5e9)          alerts.push({ level:'medium', name:'超高成交量',     desc:`24H成交量 $${fmt(vol24h)}，远超正常水平，大资金活跃，方向可信度高。`, bar:60, type:'neutral' });
   if (Math.abs(change) < 0.5 && vol24h < 1e8) alerts.push({ level:'low', name:'流动性不足', desc:'成交量极低，市场流动性差，大额订单可能造成较大滑点，不建议大仓位操作。', bar:40, type:'bear' });
 
