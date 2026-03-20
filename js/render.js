@@ -250,7 +250,14 @@ function updateMiniChart(closes, targetId) {
   const fillEl = document.getElementById('miniChartFill');
   const gradStart = document.querySelector('#chartGrad stop:first-child');
   const gradEnd = document.querySelector('#chartGrad stop:last-child');
-  if (!lineEl || !fillEl || !gradStart || !gradEnd) return;
+  if (!lineEl || !fillEl || !gradStart || !gradEnd) {
+    // 某些页面上下文不存在分析页 SVG 时，自动回退到事件页 canvas。
+    const evCanvas = document.getElementById('evMiniChart');
+    if (!targetId && evCanvas && typeof evCanvas.getContext === 'function') {
+      updateMiniChart(closes, 'evMiniChart');
+    }
+    return;
+  }
   lineEl.setAttribute('points', pts);
   lineEl.setAttribute('stroke', color);
   fillEl.setAttribute('points', fillPts);
