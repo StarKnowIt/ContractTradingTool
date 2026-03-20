@@ -1344,6 +1344,7 @@ function buildEventReasoning(dims, indicators, coin, callPut, pct, netScore, fgV
   const rsiV = indicators?.rsi ? parseFloat(indicators.rsi.value) : 50;
   const isUP = netScore > 0;
   const frNum = parseFloat(frValue||0);
+  const dir = callPut || (isUP ? 'CALL ▲ 看涨' : netScore < 0 ? 'PUT ▼ 看跌' : 'WAIT 观望');
 
   let html = `<div style="margin-bottom:12px;">
     <strong style="color:${isUP?'var(--green)':netScore<0?'var(--red)':'var(--amber)'};font-family:var(--mono);">
