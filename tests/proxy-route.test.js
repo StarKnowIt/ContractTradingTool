@@ -37,3 +37,22 @@ test('GET /api/proxy should block non-whitelisted domains', async () => {
   }
 });
 
+test('GET /api/proxy should resolve Binance-relative path u to fapi URL', async () => {
+  let fetchedUrl = '';
+  const ctx = buildProxyApp({
+    allowedDomains: 'fapi.binance.com',
+    fakeFetch: async (url) => {
+      fetchedUrl = url;
+      return { ok: true, async json() { return [{ longShortRatio: '1' }]; } };
+    }
+  });
+  try {
+    const rel = encodeURIComponent('/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1');
+    const res = await request(ctx.app).get(`/api/proxy?u=${rel}`).expect(200);
+    assert.equal(res.body[0].longShortRatio, '1');
+    assert.ok(fetchedUrl.startsWith('https://fapi.binance.com/futures/data/'));
+  } finally {
+    ctx.restore();
+  }
+});
+

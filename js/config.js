@@ -3,7 +3,8 @@
 // - 如果前后端同域部署，可保持空字符串，走相对路径
 const API       = '';
 const BINANCE   = '';
-const BINANCE_F = '';
+// 监控页等通过 /api/proxy 拉 Binance 时，需拼出完整 URL；留空会变成「仅路径」导致代理端解析失败（502）。
+const BINANCE_F = 'https://fapi.binance.com';
 const COINGECKO = '';
 
 window._allSymbols = [];
