@@ -1,7 +1,7 @@
 ## ContractTradingTool（CTBox）
 
-一个“静态前端 + Node/Express API 代理”的合约看板工具。  
-前端负责展示和指标计算，后端负责跨域聚合第三方数据并提供轻量缓存。
+一个“Next.js Web（React） + 独立 Node/Express API”的合约看板工具。  
+前端负责页面与交互，后端负责跨域聚合第三方数据并提供轻量缓存/白名单代理。
 
 > 免责声明：本项目仅用于学习与信息聚合展示，不构成任何投资建议。加密资产波动极大，请自行评估风险。
 
@@ -15,10 +15,10 @@
 
 ## 环境要求
 
-- Node.js：建议 `20.x` 或 `22.x`（LTS）
+- Node.js：建议 `20.x` / `22.x` / `23.x`
 - npm：随 Node 自带
 
-## 快速开始（推荐）
+## 快速开始（Monorepo：Next + API）
 
 ### 1) 安装依赖
 
@@ -29,13 +29,13 @@ npm install
 ### 2) 启动后端 API（必需）
 
 ```bash
-npm start
+npm run dev:api
 ```
 
-首次启动前建议先复制环境变量模板：
+首次启动前建议先复制环境变量模板（在 `apps/api` 下）：
 
 ```bash
-cp .env.example .env
+cp apps/api/.env.example apps/api/.env
 ```
 
 默认端口是 `3000`，可先验证：
@@ -43,38 +43,50 @@ cp .env.example .env
 - `http://localhost:3000/ping`
 - `http://localhost:3000/api/ticker?symbol=BTCUSDT`
 
-### 3) 配置前端 API 地址（必需）
+### 3) 启动前端 Next.js（必需）
 
-修改 `js/config.js`：
-
-```js
-const API = 'http://localhost:3000';
-```
-
-说明：
-- 本地开发：填 `http://localhost:3000`
-- 同域反向代理部署：可留空 `''`
-
-### 4) 启动前端静态页面
+复制前端环境变量示例：
 
 ```bash
-npm run serve
+cp apps/web/.env.local.example apps/web/.env.local
 ```
 
-打开：`http://localhost:5173`
+然后启动：
+
+```bash
+npm run dev:web
+```
+
+打开：`http://localhost:3001`（Next 默认端口可能是 3000/3001，具体看启动日志）
+
+### 4) 运行测试
+
+```bash
+# API 单测（node:test + supertest）
+npm run test:api
+
+# Web 侧的前端逻辑单测（node:test，当前主要覆盖 legacy js 逻辑）
+npm --workspace apps/web test
+```
+
+> 说明：Web 侧未来会逐步补齐 React 组件测试（Vitest）与/或端到端测试（Playwright）。
 
 ## 单元测试
 
 ### 运行方式
 
 ```bash
-npm test
+# API 单测
+npm run test:api
+
+# Web 侧前端逻辑单测
+npm --workspace apps/web test
 ```
 
 ### 覆盖率报告
 
 ```bash
-npm run test:cov
+npm run test:api:cov
 ```
 
 执行后会输出终端覆盖率摘要，并生成 `coverage/lcov-report` 可视化报告。
@@ -176,41 +188,31 @@ routesLayer --> browserClient
 
 ```text
 .
-├─ index.html
-├─ pages/
-├─ css/style.css
-├─ js/
-│  ├─ config.js
-│  ├─ api.js
-│  ├─ analysis.js
-│  ├─ indicators.js
-│  ├─ render.js
-│  ├─ monitor.js
-│  ├─ event.js
-│  ├─ calc.js
-│  ├─ app.js
-│  └─ utils.js
-├─ routes/
-│  ├─ market.js
-│  ├─ futures.js
-│  ├─ sentiment.js
-│  ├─ news.js
-│  ├─ proxy.js
-│  └─ live.js
-├─ services/
-│  ├─ fetch.js
-│  └─ cache.js
-├─ server.js
 ├─ package.json
+├─ apps/
+│  ├─ api/
+│  │  ├─ server.js
+│  │  ├─ routes/
+│  │  ├─ services/
+│  │  ├─ tests/
+│  │  └─ .env.example
+│  └─ web/
+│     ├─ src/app/
+│     ├─ src/lib/
+│     ├─ tests/
+│     └─ .env.local.example
+├─ css/                 # legacy 静态样式（已复制到 apps/web/src/app/legacy.css）
+├─ js/                  # legacy 静态脚本（迁移期仍保留，供对照与单测）
+├─ pages/               # legacy 静态页面（迁移期仍保留，供对照）
 └─ README.md
 ```
 
-## 环境变量配置（推荐，不再手改源码）
+## 环境变量配置（API）
 
-项目已支持 `.env` 配置。可从 `.env.example` 复制一份：
+API 已支持 `.env` 配置。可从 `apps/api/.env.example` 复制一份：
 
 ```bash
-cp .env.example .env
+cp apps/api/.env.example apps/api/.env
 ```
 
 关键变量说明：
@@ -236,6 +238,29 @@ cp .env.example .env
   - `generic`：先抓页面提取 token，再请求 API（默认）
   - `json`：直接请求 JSON API（无需页面抓取）
   - `mock`：使用后端内置演示数据（本地调试最省心）
+
+## 部署（前后端分离）
+
+### 部署 Web（Vercel）
+
+- **Project Root**：选择 `apps/web`
+- **Environment Variables**：
+  - **`NEXT_PUBLIC_API_BASE_URL`**：填你的 API 公网地址（例如 `https://ctbox-api.your-domain.com`）
+- **Build/Start**：保持默认（Next.js）
+
+### 部署 API（常驻 Node 平台）
+
+你可以把 `apps/api` 部署到任意支持 Node 的平台（Fly.io / Railway / Render 等）。
+
+- **启动命令**：`npm start`（工作目录为 `apps/api`）
+- **必配环境变量**（至少）：
+  - `PORT`（平台一般会注入；否则默认 3000）
+  - `PROXY_ALLOWED_DOMAINS`（否则 `/api/proxy` 会默认拒绝）
+  - `NEWS_RSS_SOURCES`、直播相关变量按需配置
+
+上线后可用以下方式自检：
+- `GET /ping` 应返回 `{ ok: true }`
+- `GET /api/ticker?symbol=BTCUSDT` 应返回 ticker 数据
 
 - `LIVE_TOKEN_REGEX`
   - `generic` 模式下用于提取 token 的正则（第 1 个捕获组为 token）
@@ -304,8 +329,8 @@ LIVE_LIST_PATH=list
   - 优先切到 Node LTS（20/22）后重试
 
 - 页面无数据？
-  - 确认 `npm start` 在运行，并检查 `js/config.js` 的 `API` 配置
+  - 确认 API 在运行（本地：`npm run dev:api`），并检查前端 `apps/web/.env.local` 的 `NEXT_PUBLIC_API_BASE_URL`
 
 - `/api/proxy` 提示 `domain not allowed`？
-  - 需要在 `routes/proxy.js` 里补齐白名单域名
+  - 需要在 `apps/api/.env` 配置 `PROXY_ALLOWED_DOMAINS`（或在 `apps/api/routes/proxy.js` 中查看白名单校验逻辑）
 

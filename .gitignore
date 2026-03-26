@@ -3,4 +3,9 @@ node_modules/
 .claude/
 .DS_Store
 coverage/
-.DS_Store
+
+# env files (never commit secrets)
+.env
+.env.*
+apps/api/.env
+apps/web/.env.local

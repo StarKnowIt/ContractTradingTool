@@ -47,7 +47,8 @@ function loadScript(filePath, extras = {}) {
 
 test('calcNewsSentiment should include boundary funding rate 0.05%', () => {
   const document = createDocument(['newsSentLabel', 'newsSentDesc']);
-  const ctx = loadScript(path.join(__dirname, '../js/analysis.js'), { document, window: {} });
+  // tests/ 位于 apps/web 下；前端脚本当前仍在仓库根目录 js/ 中。
+  const ctx = loadScript(path.join(__dirname, '../../../js/analysis.js'), { document, window: {} });
 
   const indicators = { a: { type: 'neutral' } };
   const fgData = { status: 'rejected' };
@@ -64,7 +65,7 @@ test('calcNewsSentiment should include boundary funding rate 0.05%', () => {
 
 test('calcNewsSentiment should include boundary funding rate -0.02%', () => {
   const document = createDocument(['newsSentLabel', 'newsSentDesc']);
-  const ctx = loadScript(path.join(__dirname, '../js/analysis.js'), { document, window: {} });
+  const ctx = loadScript(path.join(__dirname, '../../../js/analysis.js'), { document, window: {} });
 
   const indicators = { a: { type: 'neutral' } };
   const fgData = { status: 'rejected' };
@@ -81,7 +82,7 @@ test('calcNewsSentiment should include boundary funding rate -0.02%', () => {
 
 test('renderRiskAlerts should treat decimal and percent fundingRate consistently', () => {
   const document = createDocument(['riskAlerts', 'riskBadge', 'riskConclusion']);
-  const ctx = loadScript(path.join(__dirname, '../js/render.js'), { document });
+  const ctx = loadScript(path.join(__dirname, '../../../js/render.js'), { document });
 
   const ticker = { priceChangePercent: '0.2', quoteVolume: '200000000', lastPrice: '100000' };
   const noKlines = [];
@@ -99,7 +100,7 @@ test('renderRiskAlerts should treat decimal and percent fundingRate consistently
 
 test('updateMiniChart should not throw when SVG/canvas nodes are missing', () => {
   const document = createDocument([]);
-  const ctx = loadScript(path.join(__dirname, '../js/render.js'), { document });
+  const ctx = loadScript(path.join(__dirname, '../../../js/render.js'), { document });
 
   assert.doesNotThrow(() => {
     ctx.updateMiniChart([1, 2, 3, 4]);
@@ -108,7 +109,7 @@ test('updateMiniChart should not throw when SVG/canvas nodes are missing', () =>
 
 test('renderFundingHistory should keep decimal and percent funding input consistent', () => {
   const document = createDocument(['frHistBody', 'frHistBadge']);
-  const ctx = loadScript(path.join(__dirname, '../js/render.js'), { document });
+  const ctx = loadScript(path.join(__dirname, '../../../js/render.js'), { document });
 
   const dataDecimal = [{ fundingRate: '0.0002', fundingTime: Date.now() }];
   const dataPercent = [{ fundingRate: '0.02', fundingTime: Date.now() }];
