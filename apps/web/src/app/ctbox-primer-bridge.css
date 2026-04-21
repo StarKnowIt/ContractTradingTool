@@ -1,0 +1,622 @@
+/**
+ * Primer（新 UI）与 legacy.css（旧面板样式）之间的「翻译层」。
+ * - 深色/浅色切换时，--bgColor-* / --fgColor-* 会变；这里让旧的 --text、--border 等仍指向正确颜色。
+ * - 页脚、顶栏、主内容区局部修正（如 .ctbox-site-footer、.ctbox-page-content-wrap）也写在本文件。
+ * 加载顺序：globals.css → legacy.css → 本文件（最后生效，便于覆盖）。
+ */
+
+/* -------------------------------------------------------------------------- */
+/* 字号体系：以 14px 正文为基准，保证可读性与信息层级（对齐常见 B 端 / 数据产品） */
+/* -------------------------------------------------------------------------- */
+[data-color-mode] {
+  --ctbox-font-sans: var(--font-geist-sans), var(--sans, system-ui, sans-serif);
+  --ctbox-font-mono: var(--font-geist-mono), var(--mono, ui-monospace, monospace);
+
+  --ctbox-text-2xs: 0.6875rem; /* 11px 辅助、表头、标签 */
+  --ctbox-text-xs: 0.75rem; /* 12px 次要说明、元数据 */
+  --ctbox-text-sm: 0.8125rem; /* 13px 控件、侧栏、卡片副标题 */
+  --ctbox-text-base: 0.875rem; /* 14px 正文默认 */
+  --ctbox-text-md: 0.9375rem; /* 15px 强调正文、小标题 */
+  --ctbox-text-lg: 1rem; /* 16px 区块标题、导航 */
+  --ctbox-text-xl: 1.125rem; /* 18px 页内二级标题 */
+  --ctbox-text-2xl: 1.375rem; /* 22px 数据强调 */
+  --ctbox-text-display-sm: 1.75rem; /* 28px 行情主价 */
+  --ctbox-text-display: clamp(2rem, 4.5vw, 2.5rem); /* 32–40px  hero 价格 */
+
+  --ctbox-leading-tight: 1.25;
+  --ctbox-leading-snug: 1.4;
+  --ctbox-leading-normal: 1.55;
+  --ctbox-leading-relaxed: 1.65;
+}
+
+[data-color-mode="dark"],
+[data-color-mode="light"] {
+  --sans: var(
+      --fontStack-sansSerif,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      "Noto Sans",
+      Helvetica,
+      Arial,
+      sans-serif,
+      "PingFang SC",
+      "Hiragino Sans GB",
+      "Microsoft YaHei",
+      sans-serif
+    );
+  --mono: var(--fontStack-monospace, ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace);
+}
+
+[data-color-mode="dark"] {
+  --bg0: var(--bgColor-default, var(--color-canvas-default));
+  --bg1: var(--bgColor-muted, var(--color-canvas-subtle));
+  --bg2: var(--bgColor-inset, var(--color-canvas-inset));
+  --bg3: var(--bgColor-emphasis, var(--color-canvas-subtle));
+  --bg4: var(--bgColor-emphasis, var(--color-canvas-subtle));
+  --glass: var(--bgColor-muted, var(--color-canvas-subtle));
+  --glass-border: var(--borderColor-default, var(--color-border-default));
+  --glass-hover: color-mix(in srgb, var(--fgColor-default, #cdd9e5) 6%, transparent);
+  --border: var(--borderColor-muted, var(--color-border-muted));
+  --border2: var(--borderColor-default, var(--color-border-default));
+  --border3: var(--borderColor-emphasis, var(--color-border-muted));
+  --text: var(--fgColor-default, var(--color-fg-default));
+  --text-dim: var(--fgColor-muted, var(--color-fg-muted));
+  --text-muted: var(--fgColor-muted, var(--color-fg-muted));
+  --shadow: var(--shadow-resting-medium, 0 8px 24px rgba(1, 4, 9, 0.45));
+  --shadow-sm: var(--shadow-resting-small, 0 1px 3px rgba(1, 4, 9, 0.35));
+  --shadow-gold: 0 0 24px color-mix(in srgb, var(--fgColor-attention, #c69026) 25%, transparent);
+  --green: var(--fgColor-success, var(--color-success-fg-emphasis, #57ab5a));
+  --green-dim: color-mix(in srgb, var(--green) 18%, transparent);
+  --red: var(--fgColor-danger, var(--color-danger-fg-emphasis, #e5534b));
+  --red-dim: color-mix(in srgb, var(--red) 18%, transparent);
+  --gold: var(--fgColor-attention, var(--color-attention-fg-emphasis, #c69026));
+  --gold-dim: color-mix(in srgb, var(--gold) 18%, transparent);
+  --gold2: color-mix(in srgb, var(--gold) 85%, #fff);
+  --blue: var(--fgColor-accent, var(--color-accent-fg, #539bf5));
+  --blue-dim: color-mix(in srgb, var(--blue) 18%, transparent);
+  --purple: var(--color-done-fg, #986ee2);
+  --cyan: var(--color-ansi-cyan, #76e3ea);
+  --pink: var(--color-prettylights-syntax-keyword, #f47067);
+  --r: var(--borderRadius-medium, 6px);
+  --r-lg: var(--borderRadius-large, 12px);
+  --r-xl: var(--borderRadius-xl, 16px);
+}
+
+/* auto：语义色由 Primer 按系统深浅解析，映射方式与 dark 一致（依赖 --bgColor-* / --fgColor-* 在 auto 下的取值） */
+[data-color-mode="auto"] {
+  --bg0: var(--bgColor-default, var(--color-canvas-default));
+  --bg1: var(--bgColor-muted, var(--color-canvas-subtle));
+  --bg2: var(--bgColor-inset, var(--color-canvas-inset));
+  --bg3: var(--bgColor-emphasis, var(--color-canvas-subtle));
+  --bg4: var(--bgColor-emphasis, var(--color-canvas-subtle));
+  --glass: var(--bgColor-muted, var(--color-canvas-subtle));
+  --glass-border: var(--borderColor-default, var(--color-border-default));
+  --glass-hover: color-mix(in srgb, var(--fgColor-default, #cdd9e5) 6%, transparent);
+  --border: var(--borderColor-muted, var(--color-border-muted));
+  --border2: var(--borderColor-default, var(--color-border-default));
+  --border3: var(--borderColor-emphasis, var(--color-border-muted));
+  --text: var(--fgColor-default, var(--color-fg-default));
+  --text-dim: var(--fgColor-muted, var(--color-fg-muted));
+  --text-muted: var(--fgColor-muted, var(--color-fg-muted));
+  --shadow: var(--shadow-resting-medium, 0 8px 24px rgba(1, 4, 9, 0.45));
+  --shadow-sm: var(--shadow-resting-small, 0 1px 3px rgba(1, 4, 9, 0.35));
+  --shadow-gold: 0 0 24px color-mix(in srgb, var(--fgColor-attention, #c69026) 25%, transparent);
+  --green: var(--fgColor-success, var(--color-success-fg-emphasis, #57ab5a));
+  --green-dim: color-mix(in srgb, var(--green) 18%, transparent);
+  --red: var(--fgColor-danger, var(--color-danger-fg-emphasis, #e5534b));
+  --red-dim: color-mix(in srgb, var(--red) 18%, transparent);
+  --gold: var(--fgColor-attention, var(--color-attention-fg-emphasis, #c69026));
+  --gold-dim: color-mix(in srgb, var(--gold) 18%, transparent);
+  --gold2: color-mix(in srgb, var(--gold) 85%, #fff);
+  --blue: var(--fgColor-accent, var(--color-accent-fg, #539bf5));
+  --blue-dim: color-mix(in srgb, var(--blue) 18%, transparent);
+  --purple: var(--color-done-fg, #986ee2);
+  --cyan: var(--color-ansi-cyan, #76e3ea);
+  --pink: var(--color-prettylights-syntax-keyword, #f47067);
+  --r: var(--borderRadius-medium, 6px);
+  --r-lg: var(--borderRadius-large, 12px);
+  --r-xl: var(--borderRadius-xl, 16px);
+}
+
+[data-color-mode="light"] {
+  --bg0: var(--bgColor-default, var(--color-canvas-default));
+  --bg1: var(--bgColor-muted, var(--color-canvas-subtle));
+  --bg2: var(--bgColor-inset, var(--color-canvas-inset));
+  --bg3: var(--bgColor-emphasis, var(--color-canvas-subtle));
+  --bg4: var(--bgColor-emphasis, var(--color-canvas-subtle));
+  --glass: var(--bgColor-muted, var(--color-canvas-subtle));
+  --glass-border: var(--borderColor-default, var(--color-border-default));
+  --glass-hover: color-mix(in srgb, var(--fgColor-default, #1f2328) 4%, transparent);
+  --border: var(--borderColor-muted, var(--color-border-muted));
+  --border2: var(--borderColor-default, var(--color-border-default));
+  --border3: var(--borderColor-emphasis, var(--color-border-default));
+  --text: var(--fgColor-default, var(--color-fg-default));
+  --text-dim: var(--fgColor-muted, var(--color-fg-muted));
+  --text-muted: var(--fgColor-muted, var(--color-fg-muted));
+  --shadow: var(--shadow-resting-medium, 0 8px 24px rgba(31, 35, 40, 0.12));
+  --shadow-sm: var(--shadow-resting-small, 0 1px 3px rgba(31, 35, 40, 0.08));
+  --shadow-gold: 0 0 24px color-mix(in srgb, var(--fgColor-attention, #9a6700) 18%, transparent);
+  --green: var(--fgColor-success, var(--color-success-fg-emphasis, #116329));
+  --green-dim: color-mix(in srgb, var(--green) 14%, transparent);
+  --red: var(--fgColor-danger, var(--color-danger-fg-emphasis, #a40e26));
+  --red-dim: color-mix(in srgb, var(--red) 14%, transparent);
+  --gold: var(--fgColor-attention, var(--color-attention-fg-emphasis, #9a6700));
+  --gold-dim: color-mix(in srgb, var(--gold) 14%, transparent);
+  --gold2: color-mix(in srgb, var(--gold) 80%, #000);
+  --blue: var(--fgColor-accent, var(--color-accent-fg, #0969da));
+  --blue-dim: color-mix(in srgb, var(--blue) 14%, transparent);
+  --purple: var(--color-done-fg, #8250df);
+  --cyan: var(--color-ansi-cyan, #1b7c83);
+  --pink: var(--color-prettylights-syntax-keyword, #cf222e);
+  --r: var(--borderRadius-medium, 6px);
+  --r-lg: var(--borderRadius-large, 12px);
+  --r-xl: var(--borderRadius-xl, 16px);
+}
+
+/* 次要按钮：对齐 Primer default button（不要用同一套规则画 <select>，下拉框见 .form-select） */
+[data-color-mode] .btn {
+  background-color: var(--button-default-bgColor-rest, var(--color-btn-bg, var(--bg3)));
+  border-color: var(--button-default-borderColor-rest, var(--color-btn-border, var(--border2)));
+  color: var(--button-default-fgColor-rest, var(--color-btn-text, var(--text)));
+}
+
+[data-color-mode] .btn:hover {
+  background-color: var(--button-default-bgColor-hover, var(--color-btn-hover-bg, var(--bg4)));
+  border-color: var(--button-default-borderColor-hover, var(--color-btn-hover-border, var(--border3)));
+}
+
+[data-color-mode] a.btn.secondary,
+[data-color-mode] .btn.secondary {
+  background-color: var(--button-default-bgColor-rest, var(--color-btn-bg));
+  border-color: var(--button-default-borderColor-rest, var(--color-btn-border));
+}
+
+[data-color-mode] .btn-primary {
+  background-color: var(--button-primary-bgColor-rest, var(--color-btn-primary-bg, var(--gold)));
+  border-color: var(--button-primary-borderColor-rest, var(--color-btn-primary-border, var(--gold)));
+  color: var(--button-primary-fgColor-rest, var(--color-btn-primary-text, #0d1117));
+}
+
+[data-color-mode] .btn-primary:hover {
+  background-color: var(--button-primary-bgColor-hover, var(--color-btn-primary-hover-bg));
+  border-color: var(--button-primary-borderColor-hover, var(--color-btn-primary-hover-border));
+}
+
+/* 顶栏：不用 Primer Header 的 HorizontalDivider 组件，改为一整条底边，更贴近常见产品站 */
+.ctbox-site-header {
+  border-bottom: 1px solid var(--borderColor-default, var(--color-border-default));
+}
+
+/* 顶栏导航：当前页高亮 */
+.ctbox-nav-link[data-active="true"] {
+  color: var(--fgColor-accent, var(--color-accent-fg)) !important;
+  font-weight: var(--base-text-weight-semibold, 600);
+}
+
+/* 营销式下拉：触发按钮与扁平链接一致的高亮 */
+.ctbox-nav-menu-trigger[data-active="true"] {
+  color: var(--fgColor-accent, var(--color-accent-fg)) !important;
+  font-weight: var(--base-text-weight-semibold, 600);
+}
+
+.ctbox-marketing-nav {
+  margin-left: 4px;
+}
+
+.ctbox-marketing-nav .ctbox-nav-menu-trigger {
+  font-size: var(--ctbox-text-sm);
+  border-radius: var(--borderRadius-medium, 6px);
+  padding-inline: 10px;
+  padding-block: 6px;
+}
+
+.ctbox-marketing-nav .ctbox-nav-menu-trigger:hover {
+  background-color: var(--control-transparent-bgColor-hover, color-mix(in srgb, var(--fgColor-default, #1f2328) 8%, transparent));
+}
+
+/* 与 github.com 接近：去掉 legacy 顶部彩虹条 */
+body::after {
+  display: none !important;
+}
+
+/* 区块标题：箭头用强调色，替代交易所金 */
+[data-color-mode] .section-label::before {
+  color: var(--fgColor-accent, var(--color-accent-fg));
+}
+
+/* 卡片层级：muted 表面 + 默认边框（对齐 Primer 信息密度） */
+[data-color-mode] .panel {
+  background: var(--bgColor-muted, var(--bg1));
+  border-color: var(--borderColor-default, var(--border2));
+  box-shadow: var(--shadow-resting-small, var(--shadow-sm));
+}
+
+[data-color-mode] .panel-header {
+  border-bottom-color: var(--borderColor-muted, var(--border));
+}
+
+/* 未使用 .form-select 的兜底：仍用「输入控件」语义而非按钮 */
+[data-color-mode] select:not(.form-select) {
+  color: var(--fgColor-default, var(--text));
+  background-color: var(--bgColor-default, var(--bg3));
+  border: 1px solid var(--control-borderColor-rest, var(--border2));
+  border-radius: var(--borderRadius-medium, 6px);
+  box-shadow: var(--shadow-inset, var(--color-primer-shadow-inset, none));
+}
+
+[data-color-mode] select:not(.form-select):hover {
+  border-color: var(--control-borderColor-hover, var(--border3));
+}
+
+[data-color-mode] select:not(.form-select):focus,
+[data-color-mode] select:not(.form-select):focus-visible {
+  border-color: var(--focus-outlineColor, var(--fgColor-accent));
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--focus-outlineColor, var(--fgColor-accent));
+}
+
+/* Primer 表单控件：与 product.css 一致，hover 用 control token（避免 legacy 全局 select 曾造成的脏黑底） */
+[data-color-mode] select.form-select:hover,
+[data-color-mode] select.form-control:hover {
+  background-color: var(--control-bgColor-hover, var(--button-default-bgColor-hover));
+  color: var(--fgColor-default);
+  border-color: var(--button-default-borderColor-hover, var(--control-borderColor-rest));
+}
+
+/* 事件合约：模拟下单大按钮 —— 成功/危险语义对齐 Primer success / danger */
+[data-color-mode] .ctbox-ev-order-bull {
+  min-height: 72px;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--base-size-4, 4px);
+  font-family: var(--fontStack-monospace, var(--ctbox-font-mono)) !important;
+  background-color: var(--bgColor-success-muted, var(--color-success-subtle)) !important;
+  color: var(--fgColor-success, var(--color-success-fg)) !important;
+  border: 1px solid var(--borderColor-success-muted, var(--color-success-muted)) !important;
+  box-shadow: none !important;
+}
+[data-color-mode] .ctbox-ev-order-bull:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--fgColor-success, var(--color-success-fg)) 10%,
+    var(--bgColor-success-muted, var(--color-success-subtle))
+  ) !important;
+}
+[data-color-mode] .ctbox-ev-order-bear {
+  min-height: 72px;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--base-size-4, 4px);
+  font-family: var(--fontStack-monospace, var(--ctbox-font-mono)) !important;
+}
+
+/* legacy.css 会给 body 上色；画布由 Primer BaseStyles + ThemeProvider 承担 */
+body {
+  background: transparent !important;
+  font-family: var(--ctbox-font-sans);
+  font-size: var(--ctbox-text-base);
+  line-height: var(--ctbox-leading-normal);
+}
+
+/* 首页 hero（覆盖 Primer Heading 默认字号） */
+[data-color-mode] .ctbox-hero-title {
+  font-size: clamp(1.625rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: var(--ctbox-leading-tight);
+}
+
+[data-color-mode] .ctbox-hero-lead {
+  font-size: var(--ctbox-text-md);
+  line-height: var(--ctbox-leading-relaxed);
+  color: var(--fgColor-muted, var(--color-fg-muted));
+}
+
+/* 顶栏品牌字重 */
+.ctbox-brand-wordmark {
+  font-size: var(--ctbox-text-lg);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* 覆盖 legacy 过小的标题与卡片（保持 mono 数据列可读） */
+[data-color-mode] .section-label {
+  font-family: var(--ctbox-font-sans);
+  font-size: var(--ctbox-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  line-height: var(--ctbox-leading-snug);
+}
+
+[data-color-mode] .section-label::before {
+  font-size: var(--ctbox-text-xs);
+}
+
+[data-color-mode] .panel-title {
+  font-family: var(--ctbox-font-sans);
+  font-size: var(--ctbox-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: var(--ctbox-leading-snug);
+}
+
+[data-color-mode] .panel-badge {
+  font-size: var(--ctbox-text-2xs);
+  line-height: var(--ctbox-leading-tight);
+}
+
+[data-color-mode] .panel-collapse-arrow {
+  font-size: var(--ctbox-text-2xs);
+}
+
+[data-color-mode] .price-symbol {
+  font-size: var(--ctbox-text-xs);
+}
+
+[data-color-mode] .price-value {
+  font-size: var(--ctbox-text-display);
+  letter-spacing: -0.03em;
+}
+
+[data-color-mode] .price-change {
+  font-size: var(--ctbox-text-lg);
+}
+
+[data-color-mode] .stat-label {
+  font-size: var(--ctbox-text-2xs);
+  letter-spacing: 0.06em;
+}
+
+[data-color-mode] .stat-value {
+  font-size: var(--ctbox-text-base);
+}
+
+[data-color-mode] .score-label-main {
+  font-size: var(--ctbox-text-2xs);
+}
+
+[data-color-mode] .score-verdict {
+  font-size: var(--ctbox-text-md);
+}
+
+[data-color-mode] .score-num-long,
+[data-color-mode] .score-num-short {
+  font-size: var(--ctbox-text-display);
+}
+
+[data-color-mode] .score-slash {
+  font-size: var(--ctbox-text-2xl);
+}
+
+[data-color-mode] .signal-count-item {
+  font-size: var(--ctbox-text-sm);
+}
+
+[data-color-mode] .signal-count-item strong {
+  font-size: var(--ctbox-text-md);
+}
+
+[data-color-mode] #scoreBadge {
+  font-size: var(--ctbox-text-sm);
+  letter-spacing: 0.08em;
+}
+
+[data-color-mode] .ind-name {
+  font-size: var(--ctbox-text-xs);
+}
+
+[data-color-mode] .ind-desc {
+  font-size: var(--ctbox-text-xs);
+  line-height: var(--ctbox-leading-normal);
+}
+
+[data-color-mode] .ind-value {
+  font-size: var(--ctbox-text-sm);
+}
+
+[data-color-mode] .futures-card-label {
+  font-size: var(--ctbox-text-2xs);
+  letter-spacing: 0.06em;
+}
+
+[data-color-mode] .futures-card-value {
+  font-size: var(--ctbox-text-2xl);
+}
+
+[data-color-mode] .futures-card-sub {
+  font-size: var(--ctbox-text-xs);
+}
+
+[data-color-mode] .fg-number {
+  font-size: var(--ctbox-text-display);
+}
+
+[data-color-mode] .fg-label {
+  font-size: var(--ctbox-text-xs);
+}
+
+[data-color-mode] .monitor-item-title {
+  font-size: var(--ctbox-text-sm);
+}
+
+[data-color-mode] .monitor-item-meta {
+  font-size: var(--ctbox-text-2xs);
+}
+
+[data-color-mode] .mon-symbol,
+[data-color-mode] .mon-val {
+  font-size: var(--ctbox-text-sm);
+}
+
+[data-color-mode] .mon-sub {
+  font-size: var(--ctbox-text-2xs);
+}
+
+[data-color-mode] .horse-rank {
+  font-size: var(--ctbox-text-md);
+}
+
+[data-color-mode] .horse-symbol {
+  font-size: var(--ctbox-text-sm);
+}
+
+[data-color-mode] .horse-price {
+  font-size: var(--ctbox-text-sm);
+}
+
+[data-color-mode] .horse-change {
+  font-size: var(--ctbox-text-xs);
+}
+
+/* 工具类：页面内联样式可改用 var(--ctbox-text-*) 或下列 class */
+.ctbox-text-2xs {
+  font-size: var(--ctbox-text-2xs);
+}
+.ctbox-text-xs {
+  font-size: var(--ctbox-text-xs);
+}
+.ctbox-text-sm {
+  font-size: var(--ctbox-text-sm);
+}
+.ctbox-text-base {
+  font-size: var(--ctbox-text-base);
+}
+.ctbox-text-md {
+  font-size: var(--ctbox-text-md);
+}
+.ctbox-text-lg {
+  font-size: var(--ctbox-text-lg);
+}
+.ctbox-text-xl {
+  font-size: var(--ctbox-text-xl);
+}
+.ctbox-text-display-sm {
+  font-size: var(--ctbox-text-display-sm);
+}
+.ctbox-font-mono {
+  font-family: var(--ctbox-font-mono);
+}
+
+/*
+ * 主内容区：只关掉「内层」带 padding 的那一格子的纵向 flex-grow。
+ *
+ * 说明：PageLayout 的中间槽位外层 ContentWrapper 参与的是 **横向** flex（与 header/footer 同排），
+ * 若对外层也写 flex-grow:0，在 flex-basis:0 下会把主栏压成一条窄带（内容像缩成一条线）。
+ * 内层 .prc-PageLayout-Content-* 才是 column 里负责垫高的那一层，只对它关 grow 即可去掉短页面底部大块空白。
+ */
+.ctbox-page-content-wrap > div {
+  flex-grow: 0 !important;
+}
+
+/* 页脚：与 GitHub 站脚类似的分层 — 多列导航 + 底栏声明（画布略深、链接 muted） */
+.ctbox-site-footer-shell {
+  background: var(--bgColor-inset, var(--bg2));
+  border-top: 1px solid var(--borderColor-default, var(--border2));
+}
+
+.ctbox-site-footer {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding: 28px 16px 20px;
+}
+
+.ctbox-site-footer-main {
+  padding-bottom: 20px;
+}
+
+.ctbox-site-footer-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px 32px;
+}
+
+@media (max-width: 900px) {
+  .ctbox-site-footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .ctbox-site-footer-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ctbox-site-footer-col-title {
+  font-size: var(--ctbox-text-sm);
+  font-weight: var(--base-text-weight-semibold, 600);
+  color: var(--fgColor-default, var(--text));
+  margin-bottom: 10px;
+  letter-spacing: 0.01em;
+}
+
+.ctbox-site-footer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ctbox-site-footer-link {
+  font-size: var(--ctbox-text-sm);
+  color: var(--fgColor-muted, var(--text-muted));
+  text-decoration: none;
+  line-height: var(--ctbox-leading-snug);
+}
+
+.ctbox-site-footer-link:hover {
+  color: var(--fgColor-accent, var(--blue));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ctbox-site-footer-legal {
+  border-top: 1px solid var(--borderColor-muted, var(--border));
+  padding-top: 16px;
+  margin-top: 4px;
+}
+
+.ctbox-site-footer-legal-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  font-size: var(--ctbox-text-xs);
+  color: var(--fgColor-muted, var(--text-muted));
+  line-height: var(--ctbox-leading-relaxed);
+}
+
+.ctbox-site-footer-copy {
+  color: var(--fgColor-muted, var(--text-muted));
+  white-space: nowrap;
+}
+
+.ctbox-site-footer-sep {
+  opacity: 0.55;
+  user-select: none;
+}
+
+.ctbox-site-footer-disclaimer {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+/* 市场大盘页：涨跌着色（对齐 Primer success/danger 语义） */
+.ctbox-market-pct-up {
+  color: var(--fgColor-success, var(--green));
+}
+.ctbox-market-pct-down {
+  color: var(--fgColor-danger, var(--red));
+}
+.ctbox-market-pct-muted {
+  color: var(--fgColor-muted, var(--text-muted));
+}

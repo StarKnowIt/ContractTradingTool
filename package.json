@@ -14,11 +14,12 @@
     "start:api": "npm --workspace apps/api start",
     "test:api": "npm --workspace apps/api test",
     "test:api:cov": "npm --workspace apps/api run test:cov",
+    "test:web": "npm --workspace apps/web test",
 
     "dev:web": "npm --workspace apps/web run dev",
     "build:web": "npm --workspace apps/web run build",
     "start:web": "npm --workspace apps/web run start",
 
-    "lint": "echo \"Lint not configured yet\""
+    "lint": "npm --workspace apps/web run lint"
   }
 }

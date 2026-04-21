@@ -54,7 +54,7 @@ router.get('/proxy', async (req, res) => {
     const cached = cGet(target);
     if (cached) return res.json(cached);
     // 透传拉取目标资源，统一带 UA 降低部分站点拦截概率。
-    const r = await fetch(target, { headers: { 'User-Agent': UA } });
+    const r = await fetch(target, { headers: { 'User-Agent': UA }, timeout: 10000 });
     if (!r.ok) return res.status(r.status).json({ error: `HTTP ${r.status}` });
     const data = await r.json();
     // 代理结果缓存 30 秒，平衡实时性与外部请求压力。

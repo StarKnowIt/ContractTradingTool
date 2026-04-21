@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // node:test (CommonJS) lives here; keep it out of Next/TS rules.
+    "tests/**",
+    // legacy 指标引擎由 js/indicators.js 同步拷贝，保持与静态页一致，不做 ESLint 二次约束。
+    "src/lib/legacy/**",
   ]),
 ]);
 

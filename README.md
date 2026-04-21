@@ -1,336 +1,263 @@
 ## ContractTradingTool（CTBox）
 
-一个“Next.js Web（React） + 独立 Node/Express API”的合约看板工具。  
-前端负责页面与交互，后端负责跨域聚合第三方数据并提供轻量缓存/白名单代理。
+一个「**Next.js 网站（前端）** + **Node/Express API（后端）**」的合约数据看板。  
+前端负责页面与交互；后端负责跨域请求第三方接口、做轻量缓存，并对出站请求做白名单等保护。
 
-> 免责声明：本项目仅用于学习与信息聚合展示，不构成任何投资建议。加密资产波动极大，请自行评估风险。
+> **免责声明**：本项目仅用于学习与信息聚合展示，**不构成任何投资建议**。加密资产波动极大，请自行评估风险。
+
+---
+
+## 新手先看：脑子里只要记住两件事
+
+1. **这是两个程序**  
+   - **API**（`apps/api`）：跑在例如 `http://localhost:3000`，浏览器里的前端通过它去访问交易所等外网接口。  
+   - **网站**（`apps/web`）：跑在例如 `http://localhost:3001`，是你看到的页面；它**不会**直接去连 Binance，而是请求上面的 API。
+
+2. **环境变量各管各的**  
+   - 后端：`apps/api/.env`（从 `.env.example` 复制）  
+   - 前端：`apps/web/.env.local`（从 `.env.local.example` 复制），里面最重要的是 **`NEXT_PUBLIC_API_BASE_URL`**，要指到你的 API 地址。
+
+更多名词在下面「术语与目录」里。
+
+---
 
 ## 你会得到什么
 
-- 合约分析面板：多指标聚合 + 多空信号可视化
-- 事件合约页：基于同一套指标的方向建议
-- 监控页：涨跌、费率、清算、持仓、多空比异动
-- 计算器页：爆仓价、风险等级、止盈止损辅助
-- 直播页：直播间情绪方向（当前数据源需自行补齐）
+- **首页**：入口与说明  
+- **技术分析**（`/analysis`）：多指标聚合、综合评分、订单簿摘要等（React 页 + `apps/web/src/lib` 中的计算逻辑）  
+- **市场监控**（`/monitor`）：涨跌、费率、清算、持仓、多空比等聚合展示  
+- **事件合约**（`/event`）：基于指标的方向与推演辅助  
+- **计算器**（`/calc`）：爆仓价、风险、止盈止损等试算  
+- **直播**（`/live`）：列表与筛选（数据源需在 API 环境变量中配置或使用 `mock`）
+
+根目录下的 **`js/`、`pages/`、`css/`** 为迁移期保留的**旧版静态站**，仍可用于对照和部分单测，日常开发以 **`apps/web`** 为准。
+
+---
+
+## 术语与目录（小白版）
+
+| 名词 | 简单解释 |
+|------|------------|
+| Monorepo | 一个仓库里放多个子项目（这里是 `apps/api` + `apps/web`） |
+| `NEXT_PUBLIC_*` | 写给浏览器看的配置，会打进前端包；**不要**把密钥写在这里 |
+| `/api/*`（后端） | Express 提供的一组 HTTP 接口，例如 `/api/ticker` |
+| `fetchJson`（前端） | `apps/web/src/lib/api.ts` 里封装的请求函数，会自动拼上 `NEXT_PUBLIC_API_BASE_URL` |
+| React Query | 前端里做「请求、缓存、自动刷新」的库；监控页等会用到 |
+| Primer | GitHub 风格的 UI 组件与样式；顶栏、主题等与它相关 |
+
+**常用路径：**
+
+| 路径 | 说明 |
+|------|------|
+| `apps/web/src/app/` | Next.js 页面与布局（`page.tsx` = 路由页面） |
+| `apps/web/src/lib/` | 纯函数、API 封装、监控请求辅助等 |
+| `apps/api/routes/` | 按功能拆分的路由（行情、合约、情绪、新闻、代理、直播） |
+| `apps/api/services/` | 共享逻辑（如带重试的 `fetch`、内存缓存） |
+| `apps/web/src/app/legacy.css` | 从旧站迁移的样式，与 Primer 桥接变量一起在布局里引入 |
+
+**代码里哪里写了注释？**  
+入口与全局行为主要在：`apps/web/src/app/layout.tsx`、`providers.tsx`、`AppChrome.tsx`，以及 `apps/web/src/lib/api.ts`、`queryKeys.ts`、`monitorApi.ts`；后端入口在 `apps/api/server.js`，出站请求在 `apps/api/services/fetch.js`。跟着这些文件读，能串起整条链路。
+
+---
 
 ## 环境要求
 
-- Node.js：建议 `20.x` / `22.x` / `23.x`
-- npm：随 Node 自带
+- **Node.js**：建议 `20.x` / `22.x` / `23.x`（LTS 更省心）  
+- **npm**：随 Node 安装即可  
 
-## 快速开始（Monorepo：Next + API）
+---
 
-### 1) 安装依赖
+## 快速开始
+
+### 1）安装依赖（在仓库根目录）
 
 ```bash
 npm install
 ```
 
-### 2) 启动后端 API（必需）
+### 2）启动后端 API（必需）
 
 ```bash
 npm run dev:api
 ```
 
-首次启动前建议先复制环境变量模板（在 `apps/api` 下）：
+首次使用请复制环境变量模板：
 
 ```bash
 cp apps/api/.env.example apps/api/.env
 ```
 
-默认端口是 `3000`，可先验证：
+默认端口 **3000**。浏览器可访问：
 
-- `http://localhost:3000/ping`
-- `http://localhost:3000/api/ticker?symbol=BTCUSDT`
+- `http://localhost:3000/ping` → 应返回 `{ ok: true, ... }`  
+- `http://localhost:3000/api/ticker?symbol=BTCUSDT` → 行情 JSON  
 
-### 3) 启动前端 Next.js（必需）
-
-复制前端环境变量示例：
+### 3）启动前端（必需）
 
 ```bash
 cp apps/web/.env.local.example apps/web/.env.local
 ```
 
-然后启动：
+编辑 `apps/web/.env.local`，例如本地开发：
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
+```
+
+然后：
 
 ```bash
 npm run dev:web
 ```
 
-打开：`http://localhost:3001`（Next 默认端口可能是 3000/3001，具体看启动日志）
+终端里会打印端口（常见为 **3000** 或 **3001**），用浏览器打开对应地址即可。
 
-### 4) 运行测试
+### 4）运行测试
 
 ```bash
-# API 单测（node:test + supertest）
 npm run test:api
-
-# Web 侧的前端逻辑单测（node:test，当前主要覆盖 legacy js 逻辑）
-npm --workspace apps/web test
+npm run test:web
 ```
 
-> 说明：Web 侧未来会逐步补齐 React 组件测试（Vitest）与/或端到端测试（Playwright）。
+根目录的 `npm run test:web` 等价于 `npm --workspace apps/web test`（Vitest + 部分 legacy 的 `node:test`）。
 
-## 单元测试
-
-### 运行方式
+### 5）代码检查（前端 ESLint）
 
 ```bash
-# API 单测
-npm run test:api
-
-# Web 侧前端逻辑单测
-npm --workspace apps/web test
+npm run lint
 ```
 
-### 覆盖率报告
+（在根目录执行，会检查 `apps/web`。）
+
+---
+
+## 单元测试与覆盖率
 
 ```bash
+npm run test:api
+npm run test:web
 npm run test:api:cov
 ```
 
-执行后会输出终端覆盖率摘要，并生成 `coverage/lcov-report` 可视化报告。
+`test:api:cov` 会生成覆盖率报告（含 `coverage/lcov-report`）。
 
-### 当前已覆盖的测试点
+**当前测试大致覆盖**（节选）：缓存 TTL、`services/fetch` 重试与缓存、各路由在错误/白名单下的行为、`server` 集成健康检查等；前端另有 `apps/web/src/lib` 的 Vitest 用例。细节以 `apps/api/tests`、`apps/web/tests` 为准。
 
-- `services/cache.js`
-  - `cSet/cGet` 在 TTL 内可正确读取
-  - TTL 过期后会返回 `null`
-- `routes/live.js`（`LIVE_PROVIDER=mock`）
-  - `GET /api/live` 返回结构完整的 mock 数据
-  - 返回列表只包含 `live_status=1` 的直播项
-- `routes/news.js`
-  - RSS `item` 解析与币种关键词过滤
-  - 全部新闻源抓取失败时，降级返回 `200` + 空列表（不中断页面）
-- `routes/proxy.js`
-  - `u` 参数缺失时返回 `400`
-  - 非白名单域名会被拦截（`403`）
-- `routes/market.js`
-  - `ticker` 在 Binance 失败时可回退到 OKX
-  - `depth` 在上游全部失败时返回空深度兜底
-  - `klines` 在 Binance 失败时可回退到 OKX，并归一化为标准 K 线结构
-- `routes/futures.js`
-  - `funding/ls/force` 在上游失败时返回空数组降级
-  - `oi` 在上游失败时返回空对象降级
-- `routes/sentiment.js`
-  - `cg` 对非法 coin 参数返回 `400`
-  - `cg` 支持别名映射（例如 `btc -> bitcoin`）
-  - `fg` 上游异常时返回 `502`
-- `server.js`（入口层集成）
-  - `/ping` 健康检查可用
-  - `/api` 路由已正确挂载（通过 `/api/proxy` 缺参 `400` 验证）
-- `services/fetch.js`
-  - `fetchJSON` 缓存命中（同 URL TTL 内仅请求一次）
-  - 上游非 `ok` 响应时正确抛出 HTTP 错误
-- 前端关键逻辑（`js/analysis.js` / `js/render.js`）
-  - `calcNewsSentiment` 资金费率阈值边界（`0.05%`）会正确命中
-  - `renderRiskAlerts` 对 fundingRate 小数口径/百分比口径做一致处理
-  - `updateMiniChart` 在缺失 SVG/canvas DOM 时不会抛异常
+---
 
-### 补充说明
+## 数据怎么流动（概念图）
 
-- 测试框架使用 Node 内置 `node:test`，不依赖 Jest。
-- 路由测试使用 `supertest` 做 HTTP 级验证。
+### 当前 Next.js 站点（日常开发）
 
-## 核心数据流（小白版）
+```mermaid
+flowchart LR
+  Browser[浏览器页面] --> NextWeb[Next.js apps/web]
+  NextWeb --> ApiClient[fetchJson / React Query]
+  ApiClient --> Express[Express apps/api]
+  Express --> Routes[routes/*]
+  Routes --> FetchSvc[services/fetch 等]
+  FetchSvc --> Upstream[交易所 / 第三方 HTTP]
+```
 
-### 分析页主链路
+### 旧版静态页（仅对照，可选）
 
 ```mermaid
 flowchart TD
-indexHtml[IndexHtml] --> appInit[AppInit]
-appInit --> loadAll[loadAll]
-loadAll --> apiCalls[ApiCalls]
-apiCalls --> marketData[MarketData]
-marketData --> analyzeAll[analyzeAll]
-analyzeAll --> indicators[IndicatorsAndScore]
-indicators --> renderViews[RenderViews]
-renderViews --> userDecision[UserDecision]
+  LegacyHtml[pages/*.html + js/*] --> LegacyApi[同一套 Express /api]
 ```
 
-### 前后端请求链路
+---
 
-```mermaid
-flowchart TD
-browserClient[BrowserClient] --> expressApi[ExpressApi]
-expressApi --> routesLayer[RoutesLayer]
-routesLayer --> fetchService[FetchService]
-fetchService --> cacheLayer[CacheLayer]
-fetchService --> externalApis[ExternalApis]
-externalApis --> fetchService
-cacheLayer --> routesLayer
-routesLayer --> browserClient
-```
+## 核心业务逻辑在哪（输入 → 输出）
 
-## 关键计算逻辑（输入 -> 处理 -> 输出）
+- **分析页（React）**  
+  - 拉数：`apps/web/src/app/analysis/page.tsx` 通过 `fetchJson` / `fetchJsonOptional` 调后端。  
+  - 指标：沿用 `apps/web/src/lib/legacy/indicators.js` 中的 `analyzeAll`（与旧 `js/indicators.js` 同源思路）。  
+  - 展示与派生：`apps/web/src/lib/analysisFlow.ts`、`analysisSentimentTags.ts` 等。
 
-- `js/analysis.js` 的 `loadAll`
-  - 输入：K 线、Ticker、资金费率、持仓、多空比、深度、清算等
-  - 处理：调用 `analyzeAll` 计算指标；调用 `render*` 输出各模块
-  - 输出：页面渲染 + `storeAnalysisData` 给 event/calc 复用
+- **后端路由**  
+  - `routes/market.js`：K 线、ticker、深度等  
+  - `routes/futures.js`：资金费率、持仓、多空、强平  
+  - `routes/sentiment.js`：情绪相关代理  
+  - `routes/news.js`：RSS 聚合  
+  - `routes/proxy.js`：通用 JSON 代理（**必须配置白名单域名**）  
+  - `routes/live.js`：直播列表（依赖 `LIVE_*` 环境变量或 `mock`）
 
-- `js/indicators.js` 的 `analyzeAll`
-  - 输入：标准 K 线数组
-  - 处理：计算趋势/动量/波动/量能/结构指标，并统一为 `bull|bear|neutral`
-  - 输出：`indicators` + `closes/highs/lows/volumes` + fib/vegas/elliott
+---
 
-- `js/event.js` 的 `evCalcSuggestion`
-  - 输入：`indicators` + 事件时长
-  - 处理：按短线/中线场景给指标加权打分
-  - 输出：方向建议、置信度、理由文本
+## 环境变量（API）
 
-- `js/calc.js` 的 `calcUpdate`
-  - 输入：保证金、杠杆、方向、模式、入场价
-  - 处理：爆仓价、风险等级、SL/TP、建议文案
-  - 输出：风险卡片与建议列表
+从 `apps/api/.env.example` 复制为 `apps/api/.env`。常用项：
 
-## 目录结构
+| 变量 | 作用 |
+|------|------|
+| `PORT` | 监听端口，默认 `3000` |
+| `PROXY_ALLOWED_DOMAINS` | `/api/proxy` 允许的域名，逗号分隔 |
+| `FETCH_TIMEOUT_MS` / `FETCH_MAX_RETRIES` | 出站请求超时与重试（见 `.env.example` 注释） |
+| `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` | 本机需要代理访问外网时填写 |
+| `NEWS_RSS_SOURCES` | 新闻源 JSON 数组字符串 |
+| `LIVE_*` | 直播抓取与解析；`LIVE_PROVIDER=mock` 可本地演示 |
 
-```text
-.
-├─ package.json
-├─ apps/
-│  ├─ api/
-│  │  ├─ server.js
-│  │  ├─ routes/
-│  │  ├─ services/
-│  │  ├─ tests/
-│  │  └─ .env.example
-│  └─ web/
-│     ├─ src/app/
-│     ├─ src/lib/
-│     ├─ tests/
-│     └─ .env.local.example
-├─ css/                 # legacy 静态样式（已复制到 apps/web/src/app/legacy.css）
-├─ js/                  # legacy 静态脚本（迁移期仍保留，供对照与单测）
-├─ pages/               # legacy 静态页面（迁移期仍保留，供对照）
-└─ README.md
-```
+## 环境变量（Web）
 
-## 环境变量配置（API）
+| 变量 | 作用 |
+|------|------|
+| `NEXT_PUBLIC_API_BASE_URL` | 浏览器访问的后端根地址，**不要**末尾多余 `/` |
 
-API 已支持 `.env` 配置。可从 `apps/api/.env.example` 复制一份：
-
-```bash
-cp apps/api/.env.example apps/api/.env
-```
-
-关键变量说明：
-
-- `PORT`
-  - 后端监听端口，默认 `3000`
-
-- `PROXY_ALLOWED_DOMAINS`
-  - `/api/proxy` 允许访问的域名白名单，逗号分隔
-  - 示例：`api.binance.com,fapi.binance.com,api.coingecko.com`
-
-- `NEWS_RSS_SOURCES`
-  - 新闻源 JSON 字符串（数组）
-  - 示例：`[{"url":"https://www.coindesk.com/arc/outboundfeeds/rss/","name":"CoinDesk"}]`
-
-- `LIVE_PAGE_URL` / `LIVE_API_URL`
-  - 直播页抓取与接口地址（当前直播模块必须配置）
-
-- `LIVE_REFERER` / `LIVE_ORIGIN`
-  - 直播请求头辅助字段，部分站点会校验
-
-- `LIVE_PROVIDER`
-  - `generic`：先抓页面提取 token，再请求 API（默认）
-  - `json`：直接请求 JSON API（无需页面抓取）
-  - `mock`：使用后端内置演示数据（本地调试最省心）
+---
 
 ## 部署（前后端分离）
 
-### 部署 Web（Vercel）
+### 前端（例如 Vercel）
 
-- **Project Root**：选择 `apps/web`
-- **Environment Variables**：
-  - **`NEXT_PUBLIC_API_BASE_URL`**：填你的 API 公网地址（例如 `https://ctbox-api.your-domain.com`）
-- **Build/Start**：保持默认（Next.js）
+- **Root Directory**：`apps/web`  
+- **环境变量**：`NEXT_PUBLIC_API_BASE_URL` = 你的 API 公网地址（如 `https://ctbox-api.example.com`）  
 
-### 部署 API（常驻 Node 平台）
+### 后端（任意 Node 托管）
 
-你可以把 `apps/api` 部署到任意支持 Node 的平台（Fly.io / Railway / Render 等）。
+- 工作目录：`apps/api`  
+- 启动：`npm start`  
+- 至少配置：`PORT`（若平台未注入）、`PROXY_ALLOWED_DOMAINS`  
 
-- **启动命令**：`npm start`（工作目录为 `apps/api`）
-- **必配环境变量**（至少）：
-  - `PORT`（平台一般会注入；否则默认 3000）
-  - `PROXY_ALLOWED_DOMAINS`（否则 `/api/proxy` 会默认拒绝）
-  - `NEWS_RSS_SOURCES`、直播相关变量按需配置
+自检：`GET /ping`、`GET /api/ticker?symbol=BTCUSDT`。
 
-上线后可用以下方式自检：
-- `GET /ping` 应返回 `{ ok: true }`
-- `GET /api/ticker?symbol=BTCUSDT` 应返回 ticker 数据
-
-- `LIVE_TOKEN_REGEX`
-  - `generic` 模式下用于提取 token 的正则（第 1 个捕获组为 token）
-
-- `LIVE_LIST_PATH`
-  - JSON 结果中“直播列表”所在路径，默认 `list`（例如也可填 `data.list`）
-
-> 若不配置这些变量，`proxy/news/live` 的部分能力会降级或不可用，这是预期保护行为。
+---
 
 ## 上线前检查清单
 
-- 已创建 `.env` 并填好 `PROXY_ALLOWED_DOMAINS`
-- `NEWS_RSS_SOURCES` 可被 `JSON.parse` 正常解析
-- `LIVE_PAGE_URL` 和 `LIVE_API_URL` 可访问且返回结构稳定
-- 前端 `js/config.js` 的 `API` 地址与后端端口一致
+- [ ] `apps/api/.env` 已配置且 **`PROXY_ALLOWED_DOMAINS`** 包含实际要代理的域名  
+- [ ] `apps/web` 生产环境已设置 **`NEXT_PUBLIC_API_BASE_URL`**  
+- [ ] 若使用新闻/直播：`NEWS_RSS_SOURCES` 可解析；`LIVE_*` 按目标站配置或使用 `mock`  
 
-### 开发环境示例（可直接复制到 `.env`）
+---
 
-```env
-PORT=3000
-PROXY_ALLOWED_DOMAINS=api.binance.com,api1.binance.com,api2.binance.com,fapi.binance.com,api.coingecko.com,api.alternative.me,www.okx.com
-NEWS_RSS_SOURCES=[{"url":"https://www.coindesk.com/arc/outboundfeeds/rss/","name":"CoinDesk"},{"url":"https://cointelegraph.com/rss","name":"Cointelegraph"}]
-LIVE_PAGE_URL=
-LIVE_API_URL=
-LIVE_REFERER=
-LIVE_ORIGIN=
-LIVE_PROVIDER=generic
-LIVE_TOKEN_REGEX=token=([a-f0-9]{32})
-LIVE_LIST_PATH=list
-```
+## 已知限制与可改进点
 
-说明：
-- 上面配置可直接跑通大部分分析/监控数据（直播除外）
-- 直播数据源因站点差异较大，建议你确定目标站后再补 `LIVE_*`
-- 若只想先看直播页面效果，可把 `LIVE_PROVIDER` 改为 `mock`
+- **外网与限流**：交易所等接口可能限频或变更字段，页面需容错（本项目多处已做空数据/降级处理）。  
+- **代理安全**：`/api/proxy` 依赖白名单，**切勿**在生产放开任意域名。  
+- **Legacy 目录**：`js/`、`pages/` 与根目录旧 `css/` 仅作迁移参照，新功能请写在 `apps/web`。  
+- **根目录 `npm run lint`**：仅配置为检查 `apps/web`；API 侧以 `node --test` 为主。  
 
-## 已知问题与限制
+若你希望补充：统一错误码、更细的 E2E 测试、直播源适配文档等，可在 Issue 里列需求。
 
-- `api.js` 的 `loadSymbolList` 当前走占位代理请求，常会退回本地热门币种列表
-- `indicators.js` 的肯特纳通道计算存在索引对齐风险（后续建议单元测试覆盖）
-- `analysis.js` 中 `showLiveDataSource` 有重复定义，后者会覆盖前者
-- `render.js` 文件体积较大，职责较多，维护成本偏高
-
-## 下一阶段优化建议
-
-### 高优先级（建议先做）
-
-- 补齐 `proxy/news/live` 的真实配置，打通线上数据链路
-- 修复肯特纳通道 ATR 序列对齐问题并加回归测试
-- 将 `render.js` 按页面拆分（analysis/event/monitor/live）
-
-### 中优先级
-
-- 增加接口层错误码规范与重试策略
-- 用 JSDoc 给核心函数补类型说明
-- 引入 ESLint + 基础测试（先覆盖 `analyzeAll` 与 `calcUpdate`）
-
-### 低优先级
-
-- 把前端全局变量迁移到模块化状态管理
-- 增加环境变量配置和部署脚本（dev/staging/prod）
+---
 
 ## FAQ
 
-- `npm install` 异常？
-  - 优先切到 Node LTS（20/22）后重试
+- **`npm install` 报错**  
+  换 Node LTS（20/22），删除各应用下 `node_modules` 后重装。
 
-- 页面无数据？
-  - 确认 API 在运行（本地：`npm run dev:api`），并检查前端 `apps/web/.env.local` 的 `NEXT_PUBLIC_API_BASE_URL`
+- **页面一直转圈或没有数据**  
+  确认 API 已启动，且 `apps/web/.env.local` 里 `NEXT_PUBLIC_API_BASE_URL` 与 API 地址一致（含 `http://`）。
 
-- `/api/proxy` 提示 `domain not allowed`？
-  - 需要在 `apps/api/.env` 配置 `PROXY_ALLOWED_DOMAINS`（或在 `apps/api/routes/proxy.js` 中查看白名单校验逻辑）
+- **`/api/proxy` 提示 domain not allowed**  
+  在 `apps/api/.env` 的 `PROXY_ALLOWED_DOMAINS` 中加入目标主机名，或改用已有的一手接口（如 `/api/ticker`）。
 
+- **想和旧静态站对照**  
+  看仓库根目录 `pages/`、`js/`，样式对照 `css/style.css` 与 `apps/web/src/app/legacy.css`。
+
+---
+
+## 许可证与致谢
+
+使用第三方公开接口时请遵守各平台服务条款。UI 使用 [Primer](https://primer.style/) 与 GitHub 设计语言相关的开源组件。

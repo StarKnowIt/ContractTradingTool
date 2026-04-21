@@ -1,4 +1,11 @@
-// 后端入口：提供 /api/* 聚合接口，给前端统一访问。
+/**
+ * CTBox 后端入口（Express）
+ * -------------------------
+ * 作用：给 Next 前端（或其它客户端）提供统一的 `/api/*` HTTP 接口，
+ *       在服务端访问交易所等外网，避免浏览器 CORS，并可做缓存与白名单。
+ * 启动：在 apps/api 目录执行 `npm run dev` 或 `npm start`（根目录可用 `npm run dev:api`）。
+ * 注意：本文件末尾用 `module.exports = app` 导出 app，便于集成测试里直接注入。
+ */
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -29,6 +36,7 @@ app.use(express.static(__dirname));
 
 // 按功能模块挂载路由，统一前缀 /api。
 app.use('/api', require('./routes/market'));
+app.use('/api/market', require('./routes/marketBoard'));
 app.use('/api', require('./routes/futures'));
 app.use('/api', require('./routes/sentiment'));
 app.use('/api', require('./routes/news'));

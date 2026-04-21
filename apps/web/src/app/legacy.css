@@ -189,7 +189,12 @@ body::after {
 .tab-icon { font-size:12px; }
 .tab-label { font-size:11px; }
 
-select, .btn {
+/*
+ * 旧版无 class 的下拉/按钮（静态页遗留）。勿作用于 Primer 的 .form-select / .form-control，
+ * 否则会覆盖 @primer/css 的控件色与 hover，出现「整块发黑」。
+ */
+select:not(.form-select):not(.form-control),
+.btn {
   background:var(--bg3);
   border:1px solid var(--border2);
   color:var(--text);
@@ -203,14 +208,15 @@ select, .btn {
   -webkit-appearance:none;
   appearance:none;
 }
-select {
+select:not(.form-select):not(.form-control) {
   padding-right:28px;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23848e9c'/%3E%3C/svg%3E");
   background-repeat:no-repeat;
   background-position:right 10px center;
 }
-select:hover, .btn:hover { border-color:var(--border3); background:var(--bg4); }
-select:focus { border-color:var(--gold); box-shadow:0 0 0 2px var(--gold-dim); }
+select:not(.form-select):not(.form-control):hover,
+.btn:hover { border-color:var(--border3); background:var(--bg4); }
+select:not(.form-select):not(.form-control):focus { border-color:var(--gold); box-shadow:0 0 0 2px var(--gold-dim); }
 
 .btn-primary {
   background:var(--gold);
@@ -808,6 +814,7 @@ select:focus { border-color:var(--gold); box-shadow:0 0 0 2px var(--gold-dim); }
   .fg-card-grid { grid-template-columns:1fr; }
 }
 
+/* 事件合约：旧静态页 pages/event.html 仍引用；Next.js `/event` 已改用 @primer/react Button / SegmentedControl */
 .ev-coin-btn {
   padding:6px 16px;
   border-radius:20px;

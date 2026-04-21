@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { fetchJson } from "@/lib/api";
+import { USDT_BASE_OPTIONS } from "@/lib/usdtBaseOptions";
 
 type Dir = "long" | "short";
 type Mode = "cross" | "isolated";
@@ -114,7 +115,7 @@ export default function CalcPage() {
 
   return (
     <main style={{ padding: "12px 0", display: "flex", flexDirection: "column", gap: 14 }}>
-      <div className="section-label">合约计算器（React 迁移版）</div>
+      <div className="section-label">合约计算器</div>
 
       <div className="panel">
         <div className="panel-header">
@@ -127,22 +128,18 @@ export default function CalcPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
               <div className="calc-label">币种</div>
-              <input
+              <select
+                className="form-select input-monospace input-block"
                 value={coin}
-                onChange={(e) => setCoin(e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 10))}
-                placeholder="如 BTC"
-                style={{
-                  background: "var(--bg3)",
-                  border: "1px solid var(--border2)",
-                  color: "var(--text)",
-                  fontFamily: "var(--mono)",
-                  fontSize: 14,
-                  padding: "8px 12px",
-                  borderRadius: "var(--r)",
-                  outline: "none",
-                  width: "100%",
-                }}
-              />
+                onChange={(e) => setCoin(e.target.value)}
+                aria-label="币种（USDT 本位）"
+              >
+                {USDT_BASE_OPTIONS.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <div className="calc-label">方向</div>
@@ -172,49 +169,29 @@ export default function CalcPage() {
           <div style={{ marginTop: 12 }}>
             <div className="calc-label">账户余额 (USDT)</div>
             <input
+              className="form-control input-monospace input-block"
               type="number"
               value={balance}
               min={0}
               onChange={(e) => setBalance(parseFloat(e.target.value || "0"))}
-              style={{
-                background: "var(--bg3)",
-                border: "1px solid var(--border2)",
-                color: "var(--text)",
-                fontFamily: "var(--mono)",
-                fontSize: 14,
-                padding: "8px 12px",
-                borderRadius: "var(--r)",
-                outline: "none",
-                width: "100%",
-              }}
             />
           </div>
 
           <div style={{ marginTop: 12 }}>
             <div className="calc-label">下单保证金 (USDT)</div>
             <input
+              className="form-control input-monospace input-block"
               type="number"
               value={margin}
               min={0}
               onChange={(e) => setMargin(parseFloat(e.target.value || "0"))}
-              style={{
-                background: "var(--bg3)",
-                border: "1px solid var(--border2)",
-                color: "var(--text)",
-                fontFamily: "var(--mono)",
-                fontSize: 14,
-                padding: "8px 12px",
-                borderRadius: "var(--r)",
-                outline: "none",
-                width: "100%",
-              }}
             />
           </div>
 
           <div style={{ marginTop: 12 }}>
             <div className="calc-label" style={{ display: "flex", justifyContent: "space-between" }}>
               <span>杠杆倍数</span>
-              <span style={{ color: "var(--gold)", fontFamily: "var(--mono)", fontWeight: 700 }}>{lev}x</span>
+              <span style={{ color: "var(--fgColor-accent, var(--blue))", fontFamily: "var(--mono)", fontWeight: 700 }}>{lev}x</span>
             </div>
             <input
               type="range"
@@ -222,7 +199,7 @@ export default function CalcPage() {
               max={125}
               value={lev}
               onChange={(e) => setLev(parseInt(e.target.value, 10))}
-              style={{ width: "100%", accentColor: "var(--gold)", margin: "6px 0" }}
+              style={{ width: "100%", accentColor: "var(--fgColor-accent, var(--blue))", margin: "6px 0" }}
             />
           </div>
 
@@ -230,38 +207,15 @@ export default function CalcPage() {
             <div className="calc-label">开仓价格 (USDT)</div>
             <div style={{ display: "flex", gap: 8 }}>
               <input
+                className="form-control input-monospace"
                 type="number"
                 value={entry || ""}
                 placeholder={currentPrice ? String(currentPrice) : "输入开仓价"}
                 step="any"
                 onChange={(e) => setEntry(parseFloat(e.target.value || "0"))}
-                style={{
-                  background: "var(--bg3)",
-                  border: "1px solid var(--border2)",
-                  color: "var(--text)",
-                  fontFamily: "var(--mono)",
-                  fontSize: 14,
-                  padding: "8px 12px",
-                  borderRadius: "var(--r)",
-                  outline: "none",
-                  flex: 1,
-                }}
+                style={{ flex: 1, minWidth: 0 }}
               />
-              <button
-                onClick={() => setEntry(currentPrice)}
-                style={{
-                  background: "var(--gold-dim)",
-                  color: "var(--gold)",
-                  border: "1px solid rgba(240,185,11,0.3)",
-                  fontSize: 11,
-                  padding: "6px 12px",
-                  borderRadius: "var(--r)",
-                  cursor: "pointer",
-                  fontFamily: "var(--mono)",
-                  whiteSpace: "nowrap",
-                  fontWeight: 700,
-                }}
-              >
+              <button type="button" className="btn secondary" onClick={() => setEntry(currentPrice)} style={{ fontSize: "var(--ctbox-text-sm)", padding: "6px 12px", whiteSpace: "nowrap", fontWeight: 700 }}>
                 当前价
               </button>
             </div>
@@ -308,8 +262,8 @@ export default function CalcPage() {
             </div>
           </div>
 
-          <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>
-            说明：该计算器先复用原项目的“简化模型”作为迁移样板；后续会把更多交易所细节参数（维持保证金率阶梯、手续费等）纳入。
+          <div style={{ fontSize: "var(--ctbox-text-xs)", color: "var(--text-muted)", lineHeight: 1.6 }}>
+            说明：结果为简化模型估算，未包含手续费、资金费率与维持保证金阶梯等细节，仅供参考，不构成投资建议。
           </div>
         </div>
       </div>
